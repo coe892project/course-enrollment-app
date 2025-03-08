@@ -1,0 +1,7 @@
+<nav>
+    <a href="/">Home</a>
+    <a href="/courses">Courses</a>
+  </nav>
+  
+  <slot />
+  
