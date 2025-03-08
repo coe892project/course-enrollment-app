@@ -1,4 +1,12 @@
-# Ignore everything in this directory
-*
-# Except this file
+# Python cache
+__pycache__
+
+# Environment variables
+.env
+env
+
+# .idea folder
+.idea
+
+# Gitignore must be kept
 !.gitignore
