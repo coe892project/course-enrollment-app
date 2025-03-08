@@ -1,0 +1,20 @@
+[
+    {
+        "student_id": "500123456",
+        "first_name": "Alice",
+        "last_name": "Johnson",
+        "status": "Full-time",
+        "program_id": "P001",
+        "enrolled_courses": ["CPS109"],
+        "completed_courses": []
+    },
+    {
+        "student_id": "500654321",
+        "first_name": "Bob",
+        "last_name": "Williams",
+        "status": "Part-time",
+        "program_id": "P002",
+        "enrolled_courses": ["MTH201", "MTH202", "MTH203"],
+        "completed_courses": ["MTH101", "MTH102", "MTH103"]
+    }
+]

@@ -1,0 +1,20 @@
+[
+    {
+        "offering_id": "O001",
+        "course_code": "MTH514",
+        "course_name": "Probability and Stochastic Processes",
+        "instructor": "Dr. Ali Rezai",
+        "semester": "Fall",
+        "year": 2023,
+        "available_seats": 50
+    },
+    {
+        "offering_id": "O002",
+        "course_code": "MTH110",
+        "course_name": "Calculus I",
+        "instructor": "Dr. Jonah Horowitz",
+        "semester": "Fall",
+        "year": 2023,
+        "available_seats": 40
+    }
+]

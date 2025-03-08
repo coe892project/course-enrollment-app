@@ -1,0 +1,24 @@
+[
+    {
+        "course_code": "MTH514",
+        "course_name": "Probability and Stochastic Processes",
+        "section": "01",
+        "semester": "Fall",
+        "prerequisites": [],
+        "corequisites": [],
+        "available_seats": 50,
+        "instructor": "Dr. Ali Rezai",
+        "course_time": ["Mon 10:00-12:00", "Fri 17:00-18:00"]
+    },
+    {
+        "course_code": "MTH110",
+        "course_name": "Calculus I",
+        "section": "02",
+        "semester": "Fall",
+        "prerequisites": [],
+        "corequisites": [],
+        "available_seats": 40,
+        "instructor": "Dr. Jonah Horowitz",
+        "course_time": ["Tue 13:00-15:00", "Thu 11:00-12:00"]
+    }
+]

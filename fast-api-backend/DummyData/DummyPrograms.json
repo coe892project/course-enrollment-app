@@ -1,0 +1,14 @@
+[
+    {
+        "program_id": "P001",
+        "program_name": "Computer Engineering",
+        "degree_type": "Bachelor of Engineering",
+        "department_id": "COE"
+    },
+    {
+        "program_id": "P002",
+        "program_name": "Mathematics",
+        "degree_type": "Bachelor of Science",
+        "department_id": "MTH"
+    }
+]
