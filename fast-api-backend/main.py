@@ -1,20 +1,30 @@
-import pymongo
 import os
-from dotenv import load_dotenv
-import uvicorn
-from fastapi import FastAPI, HTTPException
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-from pydantic import BaseModel
+import logging
 from typing import List, Optional
+
+import pymongo
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from pydantic import BaseModel
+from urllib.parse import quote_plus
+
+logger = logging.getLogger('uvicorn.error')
 
 load_dotenv()
 conString = os.getenv("MONGODB_URL")
-conString = conString.replace("<db_username>", os.getenv("MONGODB_USER"))
-conString = conString.replace("<db_password>", os.getenv("MONGODB_PASSWORD"))
+conString = conString.replace("<db_username>", quote_plus(os.getenv("MONGODB_USER")))
+conString = conString.replace("<db_password>", quote_plus(os.getenv("MONGODB_PASSWORD")))
+
 client = pymongo.MongoClient(conString)
+# Send a ping to confirm a successful connection
+try:
+    client.admin.command('ping')
+    logger.info(f"MongoDB is connected!")
+except Exception as e:
+    logger.error(e)
+    exit(1)
+
 db = client["CourseEnrollment"]
-print(db.list_collection_names())
 
 app = FastAPI()
 
@@ -95,12 +105,12 @@ def get_courses():
 
 @app.post("/courses/", response_model=Course)
 def create_course(course: Course):
-    db.courses.insert_one(course.dict())
+    db.courses.insert_one(course.model_dump())
     return course
 
 @app.put("/courses/{course_code}", response_model=Course)
 def update_course(course_code: str, course: Course):
-    db.courses.update_one({"course_code": course_code}, {"$set": course.dict()})
+    db.courses.update_one({"course_code": course_code}, {"$set": course.model_dump()})
     return course
 
 @app.delete("/courses/{course_code}")
@@ -115,12 +125,12 @@ def get_students():
 
 @app.post("/students/", response_model=Student)
 def create_student(student: Student):
-    db.students.insert_one(student.dict())
+    db.students.insert_one(student.model_dump())
     return student
 
 @app.put("/students/{student_id}", response_model=Student)
 def update_student(student_id: str, student: Student):
-    db.students.update_one({"student_id": student_id}, {"$set": student.dict()})
+    db.students.update_one({"student_id": student_id}, {"$set": student.model_dump()})
     return student
 
 @app.delete("/students/{student_id}")
@@ -135,12 +145,12 @@ def get_course_offerings():
 
 @app.post("/course_offerings/", response_model=CourseOffering)
 def create_course_offering(course_offering: CourseOffering):
-    db.course_offerings.insert_one(course_offering.dict())
+    db.course_offerings.insert_one(course_offering.model_dump())
     return course_offering
 
 @app.put("/course_offerings/{offering_id}", response_model=CourseOffering)
 def update_course_offering(offering_id: str, course_offering: CourseOffering):
-    db.course_offerings.update_one({"offering_id": offering_id}, {"$set": course_offering.dict()})
+    db.course_offerings.update_one({"offering_id": offering_id}, {"$set": course_offering.model_dump()})
     return course_offering
 
 @app.delete("/course_offerings/{offering_id}")
@@ -155,12 +165,12 @@ def get_locations():
 
 @app.post("/locations/", response_model=Location)
 def create_location(location: Location):
-    db.locations.insert_one(location.dict())
+    db.locations.insert_one(location.model_dump())
     return location
 
 @app.put("/locations/{room_id}", response_model=Location)
 def update_location(room_id: str, location: Location):
-    db.locations.update_one({"room_id": room_id}, {"$set": location.dict()})
+    db.locations.update_one({"room_id": room_id}, {"$set": location.model_dump()})
     return location
 
 @app.delete("/locations/{room_id}")
@@ -175,12 +185,12 @@ def get_instructors():
 
 @app.post("/instructors/", response_model=Instructor)
 def create_instructor(instructor: Instructor):
-    db.instructors.insert_one(instructor.dict())
+    db.instructors.insert_one(instructor.model_dump())
     return instructor
 
 @app.put("/instructors/{instructor_id}", response_model=Instructor)
 def update_instructor(instructor_id: str, instructor: Instructor):
-    db.instructors.update_one({"instructor_id": instructor_id}, {"$set": instructor.dict()})
+    db.instructors.update_one({"instructor_id": instructor_id}, {"$set": instructor.model_dump()})
     return instructor
 
 @app.delete("/instructors/{instructor_id}")
@@ -195,12 +205,12 @@ def get_programs():
 
 @app.post("/programs/", response_model=Program)
 def create_program(program: Program):
-    db.programs.insert_one(program.dict())
+    db.programs.insert_one(program.model_dump())
     return program
 
 @app.put("/programs/{program_id}", response_model=Program)
 def update_program(program_id: str, program: Program):
-    db.programs.update_one({"program_id": program_id}, {"$set": program.dict()})
+    db.programs.update_one({"program_id": program_id}, {"$set": program.model_dump()})
     return program
 
 @app.delete("/programs/{program_id}")
@@ -215,12 +225,12 @@ def get_departments():
 
 @app.post("/departments/", response_model=Department)
 def create_department(department: Department):
-    db.departments.insert_one(department.dict())
+    db.departments.insert_one(department.model_dump())
     return department
 
 @app.put("/departments/{department_id}", response_model=Department)
 def update_department(department_id: str, department: Department):
-    db.departments.update_one({"department_id": department_id}, {"$set": department.dict()})
+    db.departments.update_one({"department_id": department_id}, {"$set": department.model_dump()})
     return department
 
 @app.delete("/departments/{department_id}")
@@ -235,12 +245,12 @@ def get_faculties():
 
 @app.post("/faculties/", response_model=Faculty)
 def create_faculty(faculty: Faculty):
-    db.faculties.insert_one(faculty.dict())
+    db.faculties.insert_one(faculty.model_dump())
     return faculty
 
 @app.put("/faculties/{faculty_id}", response_model=Faculty)
 def update_faculty(faculty_id: str, faculty: Faculty):
-    db.faculties.update_one({"faculty_id": faculty_id}, {"$set": faculty.dict()})
+    db.faculties.update_one({"faculty_id": faculty_id}, {"$set": faculty.model_dump()})
     return faculty
 
 @app.delete("/faculties/{faculty_id}")
@@ -255,12 +265,12 @@ def get_enrollments():
 
 @app.post("/enrollments/", response_model=Enrollment)
 def create_enrollment(enrollment: Enrollment):
-    db.enrollments.insert_one(enrollment.dict())
+    db.enrollments.insert_one(enrollment.model_dump())
     return enrollment
 
 @app.put("/enrollments/{enrollment_id}", response_model=Enrollment)
 def update_enrollment(enrollment_id: str, enrollment: Enrollment):
-    db.enrollments.update_one({"enrollment_id": enrollment_id}, {"$set": enrollment.dict()})
+    db.enrollments.update_one({"enrollment_id": enrollment_id}, {"$set": enrollment.model_dump()})
     return enrollment
 
 @app.delete("/enrollments/{enrollment_id}")
@@ -275,12 +285,12 @@ def get_prerequisites():
 
 @app.post("/prerequisites/", response_model=Prerequisite)
 def create_prerequisite(prerequisite: Prerequisite):
-    db.prerequisites.insert_one(prerequisite.dict())
+    db.prerequisites.insert_one(prerequisite.model_dump())
     return prerequisite
 
 @app.put("/prerequisites/{course_id}", response_model=Prerequisite)
 def update_prerequisite(course_id: str, prerequisite: Prerequisite):
-    db.prerequisites.update_one({"course_id": course_id}, {"$set": prerequisite.dict()})
+    db.prerequisites.update_one({"course_id": course_id}, {"$set": prerequisite.model_dump()})
     return prerequisite
 
 @app.delete("/prerequisites/{course_id}")
@@ -288,5 +298,6 @@ def delete_prerequisite(course_id: str):
     db.prerequisites.delete_one({"course_id": course_id})
     return {"message": "Prerequisite deleted"}
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# NOTE: Use fastapi dev main.py
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="0.0.0.0", port=8000)
