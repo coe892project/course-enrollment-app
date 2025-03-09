@@ -1,0 +1,10 @@
+[
+    {
+        "course_id": "CPS843",
+        "prerequisite_course_id": "CPS688"
+    },
+    {
+        "course_id": "MTH210",
+        "prerequisite_course_id": "MTH110"
+    }
+]

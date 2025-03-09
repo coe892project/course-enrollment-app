@@ -1,0 +1,16 @@
+[
+    {
+        "enrollment_id": "E001",
+        "student_id": "500123456",
+        "offering_id": "O001",
+        "enrollment_date": "2023-09-01",
+        "grade": "A"
+    },
+    {
+        "enrollment_id": "E002",
+        "student_id": "500654321",
+        "offering_id": "O002",
+        "enrollment_date": "2023-09-02",
+        "grade": "B+"
+    }
+]
