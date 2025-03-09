@@ -14,9 +14,9 @@ load_dotenv()
 proj_name = os.getenv("MONGODB_APP_NAME") if os.getenv("MONGODB_APP_NAME") is not None else "COE892Project"
 logger.info(f"Project name: {proj_name}")
 conString = f"mongodb+srv://" \
-            f"{quote_plus(os.getenv("MONGODB_USER"))}:{quote_plus(os.getenv("MONGODB_PASSWORD"))}" \
-            f"@{os.getenv("MONGODB_CLUSTER_URL")}/?retryWrites=true&w=majority" \
-            f"&appName={proj_name}"
+            f'{quote_plus(os.getenv("MONGODB_USER"))}:{quote_plus(os.getenv("MONGODB_PASSWORD"))}' \
+            f'@{os.getenv("MONGODB_CLUSTER_URL")}/?retryWrites=true&w=majority' \
+            f'&appName={proj_name}'
 
 client = pymongo.MongoClient(conString)
 # Send a ping to confirm a successful connection
@@ -27,7 +27,7 @@ except Exception as e:
     logger.error(e)
     exit(1)
 
-db = client["CourseEnrollment"]
+db = client.CourseEnrollment
 
 app = FastAPI()
 
