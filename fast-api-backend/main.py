@@ -42,7 +42,7 @@ class Course(BaseModel):
     corequisites: List[str] = []
     available_seats: int
     instructor: str
-    course_time: str
+    course_time: List[str] = []
 
 
 class Student(BaseModel):
