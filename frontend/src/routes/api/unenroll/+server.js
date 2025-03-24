@@ -1,6 +1,15 @@
 import { ENDPOINTS } from '$lib/config.js';
 
 /**
+ * @typedef {Object} ApiEnrollment
+ * @property {string} enrollment_id
+ * @property {string} student_id
+ * @property {string} offering_id
+ * @property {string} enrollment_date
+ * @property {string|null} grade
+ */
+
+/**
  * @typedef {Object} ApiCourseOffering
  * @property {string} offering_id
  * @property {string} course_code
@@ -26,7 +35,17 @@ export async function POST({ request }) {
       });
     }
 
-    // First, fetch course offerings to find the offering ID for this course
+    // First, fetch all enrollments
+    const enrollmentsResponse = await fetch(ENDPOINTS.ENROLLMENTS);
+
+    if (!enrollmentsResponse.ok) {
+      throw new Error(`API error: ${enrollmentsResponse.status}`);
+    }
+
+    /** @type {ApiEnrollment[]} */
+    const allEnrollments = await enrollmentsResponse.json();
+
+    // Find course offerings to get the offering ID for this course
     const offeringsResponse = await fetch(ENDPOINTS.COURSE_OFFERINGS);
 
     if (!offeringsResponse.ok) {
@@ -35,9 +54,7 @@ export async function POST({ request }) {
 
     /** @type {ApiCourseOffering[]} */
     const courseOfferings = await offeringsResponse.json();
-
-    // Find the offering for this course
-    const offering = courseOfferings.find(offering => offering.course_code === courseId);
+    const offering = courseOfferings.find((o) => o.course_code === courseId);
 
     if (!offering) {
       return new Response(JSON.stringify({ error: 'Course not found' }), {
@@ -46,47 +63,38 @@ export async function POST({ request }) {
       });
     }
 
-    if (offering.available_seats <= 0) {
-      return new Response(JSON.stringify({ error: 'Course is full' }), {
-        status: 400,
+    // Find the enrollment to delete
+    const enrollment = allEnrollments.find(
+      e => e.student_id === userId && e.offering_id === offering.offering_id
+    );
+
+    if (!enrollment) {
+      return new Response(JSON.stringify({ error: 'Enrollment not found' }), {
+        status: 404,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Create a new enrollment
-    const enrollmentData = {
-      enrollment_id: `E${Date.now()}`, // Generate a unique ID
-      student_id: userId,
-      offering_id: offering.offering_id,
-      enrollment_date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
-      grade: null
-    };
-
-    // Post the new enrollment to the API
-    const enrollResponse = await fetch(ENDPOINTS.ENROLLMENTS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(enrollmentData)
+    // Delete the enrollment
+    const deleteResponse = await fetch(`${ENDPOINTS.ENROLLMENTS}${enrollment.enrollment_id}`, {
+      method: 'DELETE'
     });
 
-    if (!enrollResponse.ok) {
-      throw new Error(`Enrollment failed: ${enrollResponse.status}`);
+    if (!deleteResponse.ok) {
+      throw new Error(`Failed to delete enrollment: ${deleteResponse.status}`);
     }
 
-    // Return the course details with enrollment date
     return new Response(JSON.stringify({
-      id: offering.course_code,
-      title: offering.course_name,
-      description: `${offering.course_code} - ${offering.semester} ${offering.year}`,
-      instructor: offering.instructor,
-      seats: offering.available_seats,
-      enrollmentDate: enrollmentData.enrollment_date
+      message: 'Enrollment deleted successfully',
+      courseId,
+      userId
     }), {
-      status: 201,
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+
   } catch (error) {
-    console.error('Error enrolling in course:', error);
+    console.error('Error unenrolling student:', error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
