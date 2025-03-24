@@ -179,10 +179,11 @@
     }
   }
 
-  // Watch for changes to selectedStudentId
-  $: if (selectedStudentId && !isLoading) {
-    // Reload data when student selection changes
-    loadData();
+  // This function will be called when the user manually selects a student
+  function handleStudentChange() {
+    if (selectedStudentId && !isLoading) {
+      loadData();
+    }
   }
 </script>
 
@@ -190,42 +191,60 @@
   <title>Student Dashboard - Course Enrollment</title>
 </svelte:head>
 
-<main class="container mx-auto p-4">
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold mb-2">Admin Dashboard</h1>
-    <p class="text-gray-600">Logged in as: {$user.name}</p>
-    <div class="mt-4 flex gap-4">
-      <a href="/" class="text-blue-500 hover:underline">Home</a>
-      <a href="/courses" class="text-blue-500 hover:underline">Manage Enrollments</a>
-    </div>
+<main>
+  <div class="mdc-typography--headline4 dashboard-title">Admin Dashboard</div>
+  <p class="mdc-typography--body1">Logged in as: {$user.name}</p>
+
+  <div class="dashboard-nav">
+    <a href="/" class="mdc-button">
+      <span class="mdc-button__ripple"></span>
+      <span class="mdc-button__label">Home</span>
+    </a>
+    <a href="/courses" class="mdc-button">
+      <span class="mdc-button__ripple"></span>
+      <span class="mdc-button__label">Manage Enrollments</span>
+    </a>
   </div>
 
   {#if error}
-    <div class="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
+    <div class="mdc-card error-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body2">{error}</p>
+      </div>
+    </div>
   {/if}
 
   {#if unenrollSuccess}
-    <div class="bg-green-100 text-green-700 p-4 rounded mb-4">{unenrollSuccess}</div>
+    <div class="mdc-card success-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body2">{unenrollSuccess}</p>
+      </div>
+    </div>
   {/if}
 
-  <div class="mb-6">
-    <label for="student-select" class="block text-sm font-medium text-gray-700 mb-2">
+  <div class="student-select-container">
+    <label class="mdc-typography--subtitle1" for="student-select">
       Select Student to View Enrollments
     </label>
-    <select
-      id="student-select"
-      bind:value={selectedStudentId}
-      class="w-full p-2 border rounded"
-    >
-      {#each students as student}
-        <option value={student.student_id}>
-          {student.first_name} {student.last_name} ({student.student_id})
-        </option>
-      {/each}
-    </select>
+    <div class="mdc-select">
+      <select
+        id="student-select"
+        class="mdc-select__native-control"
+        bind:value={selectedStudentId}
+        on:change={handleStudentChange}
+      >
+        {#each students as student}
+          <option value={student.student_id}>
+            {student.first_name} {student.last_name} ({student.student_id})
+          </option>
+        {/each}
+      </select>
+      <div class="mdc-select__dropdown-icon"></div>
+      <div class="mdc-line-ripple"></div>
+    </div>
   </div>
 
-  <h2 class="text-2xl font-bold mb-4">
+  <h2 class="mdc-typography--headline5 courses-title">
     {#if selectedStudentId}
       {students.find(s => s.student_id === selectedStudentId)?.first_name || ''}'s Enrolled Courses
     {:else}
@@ -234,32 +253,41 @@
   </h2>
 
   {#if isLoading}
-    <div class="animate-pulse text-gray-500">Loading courses...</div>
+    <div class="loading-indicator">
+      <div class="mdc-typography--body1 animate-pulse">Loading courses...</div>
+    </div>
   {:else if !selectedStudentId}
-    <div class="bg-blue-100 text-blue-700 p-4 rounded">
-      Please select a student to view their enrollments
+    <div class="mdc-card info-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body1">Please select a student to view their enrollments</p>
+      </div>
     </div>
   {:else if enrolledCourses.length === 0}
-    <div class="bg-blue-100 text-blue-700 p-4 rounded">
-      This student is not enrolled in any courses yet.
+    <div class="mdc-card info-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body1">This student is not enrolled in any courses yet.</p>
+      </div>
     </div>
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="courses-grid">
       {#each enrolledCourses as course}
-        <div class="border rounded-lg p-4 shadow-sm">
+        <div class="course-container">
           <CourseCard {course} />
 
-          <div class="mt-4 text-sm text-gray-600">
-            <div>Enrolled on: {new Date(course.enrollmentDate).toLocaleDateString()}</div>
+          <div class="enrollment-details">
+            <div class="mdc-typography--caption">
+              Enrolled on: {new Date(course.enrollmentDate).toLocaleDateString()}
+            </div>
             {#if course.grade}
-              <div class="font-semibold">Grade: {course.grade}</div>
+              <div class="mdc-typography--subtitle2">Grade: {course.grade}</div>
             {/if}
 
             <button
+              class="mdc-button mdc-button--raised mdc-button--danger"
               on:click={() => handleUnenroll(course.id)}
-              class="w-full mt-3 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
             >
-              Unenroll
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label">Unenroll</span>
             </button>
           </div>
         </div>
@@ -267,3 +295,87 @@
     </div>
   {/if}
 </main>
+
+<style>
+  main {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .dashboard-title {
+    margin-bottom: 0.5rem;
+    color: var(--mdc-theme-primary);
+  }
+
+  .dashboard-nav {
+    margin: 1rem 0;
+    display: flex;
+    gap: 1rem;
+  }
+
+  .student-select-container {
+    margin: 1.5rem 0;
+  }
+
+  .courses-title {
+    margin: 1.5rem 0 1rem;
+    color: var(--mdc-theme-primary);
+  }
+
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .course-container {
+    margin-bottom: 1rem;
+  }
+
+  .enrollment-details {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .error-card {
+    background-color: #ffebee;
+    margin-bottom: 1rem;
+  }
+
+  .success-card {
+    background-color: #e8f5e9;
+    margin-bottom: 1rem;
+  }
+
+  .info-card {
+    background-color: #e3f2fd;
+    margin-bottom: 1rem;
+  }
+
+  .mdc-card__content {
+    padding: 1rem;
+  }
+
+  .loading-indicator {
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .mdc-button--danger {
+    background-color: var(--mdc-theme-error);
+    color: white;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  /* Add Material Design ripple effect to buttons */
+  .mdc-button__ripple {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+</style>

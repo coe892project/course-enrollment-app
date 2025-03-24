@@ -19,29 +19,82 @@
   <title>Course Enrollment</title>
 </svelte:head>
 
-<main class="container mx-auto p-4">
-  <div class="flex justify-between items-center mb-8">
-    <a href="/courses" class="text-2xl font-bold">Available Courses</a>
-    <div class="flex gap-4">
-      <span>Welcome, {$user.name}!</span>
-      <a href="/dashboard" class="btn btn-blue">My Dashboard</a>
+<main>
+  <div class="header-container">
+    <a href="/courses" class="mdc-typography--headline4 page-title">Available Courses</a>
+    <div class="user-section">
+      <span class="mdc-typography--body1 welcome-text">Welcome, {$user.name}!</span>
+      <a href="/dashboard" class="mdc-button mdc-button--raised">
+        <span class="mdc-button__ripple"></span>
+        <span class="mdc-button__label">My Dashboard</span>
+      </a>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <div class="courses-grid">
     {#each $courses as course}
       <CourseCard {course} />
     {:else}
-      <p class="text-gray-500">No courses available at the moment</p>
+      <div class="mdc-card info-card">
+        <div class="mdc-card__content">
+          <p class="mdc-typography--body1">No courses available at the moment</p>
+        </div>
+      </div>
     {/each}
   </div>
 </main>
 
 <style>
-  .btn {
-    @apply px-4 py-2 rounded transition-colors;
+  main {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
   }
-  .btn-blue {
-    @apply bg-blue-500 text-white hover:bg-blue-600;
+
+  .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    color: var(--mdc-theme-primary);
+    text-decoration: none;
+  }
+
+  .user-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .welcome-text {
+    color: var(--mdc-theme-on-surface);
+  }
+
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .info-card {
+    background-color: #e3f2fd;
+    grid-column: 1 / -1;
+  }
+
+  .mdc-card__content {
+    padding: 1rem;
+  }
+
+  /* Add Material Design ripple effect to buttons */
+  .mdc-button__ripple {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 </style>

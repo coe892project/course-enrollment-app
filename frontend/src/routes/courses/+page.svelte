@@ -244,74 +244,92 @@
   <title>All Courses - Course Enrollment</title>
 </svelte:head>
 
-<main class="container mx-auto p-4">
-  <h1 class="text-3xl font-bold mb-6">Available Courses</h1>
+<main>
+  <div class="mdc-typography--headline4 page-title">Available Courses</div>
 
   {#if error}
-    <div class="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
+    <div class="mdc-card error-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body2">{error}</p>
+      </div>
+    </div>
   {/if}
 
   {#if enrollmentSuccess}
-    <div class="bg-green-100 text-green-700 p-4 rounded mb-4">{enrollmentSuccess}</div>
+    <div class="mdc-card success-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body2">{enrollmentSuccess}</p>
+      </div>
+    </div>
   {/if}
 
   {#if unenrollSuccess}
-    <div class="bg-green-100 text-green-700 p-4 rounded mb-4">{unenrollSuccess}</div>
+    <div class="mdc-card success-card">
+      <div class="mdc-card__content">
+        <p class="mdc-typography--body2">{unenrollSuccess}</p>
+      </div>
+    </div>
   {/if}
 
-  <div class="mb-6">
-    <label for="student-select" class="block text-sm font-medium text-gray-700 mb-2">
+  <div class="student-select-container">
+    <label class="mdc-typography--subtitle1" for="student-select">
       Select Student to Enroll
     </label>
-    <select
-      id="student-select"
-      bind:value={selectedStudentId}
-      class="w-full p-2 border rounded"
-    >
-      {#each students as student}
-        <option value={student.student_id}>
-          {student.first_name} {student.last_name} ({student.student_id})
-        </option>
-      {/each}
-    </select>
+    <div class="mdc-select">
+      <select
+        id="student-select"
+        class="mdc-select__native-control"
+        bind:value={selectedStudentId}
+      >
+        {#each students as student}
+          <option value={student.student_id}>
+            {student.first_name} {student.last_name} ({student.student_id})
+          </option>
+        {/each}
+      </select>
+      <div class="mdc-select__dropdown-icon"></div>
+      <div class="mdc-line-ripple"></div>
+    </div>
   </div>
 
   {#if isLoading}
-    <div class="animate-pulse space-y-4">
-      <div class="h-16 bg-gray-200 rounded"></div>
-      <div class="h-16 bg-gray-200 rounded"></div>
+    <div class="loading-indicator">
+      <div class="mdc-typography--body1 animate-pulse">Loading courses...</div>
     </div>
   {:else}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="courses-grid">
       {#each courses as course}
-        <div class="border rounded-lg p-4 shadow-sm">
+        <div class="course-container">
           <CourseCard {course} />
 
-          <div class="mt-4 text-sm text-gray-600">
-            <div class="flex justify-between items-center mb-2">
-              <span>Seats available: {course.seats}</span>
-              <span class="text-xs">
-                {course.instructor}
-              </span>
+          <div class="course-actions">
+            <div class="course-details">
+              <span class="mdc-typography--caption">Seats available: {course.seats}</span>
+              <span class="mdc-typography--caption">{course.instructor}</span>
             </div>
 
             {#if selectedStudentId && isEnrolled(selectedStudentId, course.id)}
-              <div class="text-green-600 font-medium mb-2">
-                ✓ Student already enrolled
+              <div class="enrollment-status">
+                <span class="mdc-typography--body2 enrolled-status">✓ Student already enrolled</span>
               </div>
               <button
+                class="mdc-button mdc-button--raised mdc-button--danger"
                 on:click={() => handleUnenroll(course.id)}
-                class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
-                Unenroll Student
+                <span class="mdc-button__ripple"></span>
+                <span class="mdc-button__label">Unenroll Student</span>
               </button>
             {:else}
               <button
+                class="mdc-button mdc-button--raised"
+                class:mdc-button--disabled={course.seats <= 0 || !selectedStudentId}
                 on:click={() => handleEnrollment(course.id)}
-                class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
                 disabled={course.seats <= 0 || !selectedStudentId}
               >
-                {course.seats > 0 ? 'Enroll Student' : 'Course Full'}
+                <span class="mdc-button__ripple"></span>
+                <span class="mdc-button__label">
+                  {course.seats > 0 ? 'Enroll Student' : 'Course Full'}
+                </span>
               </button>
             {/if}
           </div>
@@ -320,3 +338,95 @@
     </div>
   {/if}
 </main>
+
+<style>
+  main {
+    padding: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .page-title {
+    margin-bottom: 1.5rem;
+    color: var(--mdc-theme-primary);
+  }
+
+  .student-select-container {
+    margin: 1.5rem 0;
+  }
+
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  .course-container {
+    margin-bottom: 1rem;
+  }
+
+  .course-actions {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .course-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .enrollment-status {
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .enrolled-status {
+    color: var(--mdc-theme-secondary);
+    font-weight: 500;
+  }
+
+  .error-card {
+    background-color: #ffebee;
+    margin-bottom: 1rem;
+  }
+
+  .success-card {
+    background-color: #e8f5e9;
+    margin-bottom: 1rem;
+  }
+
+  .mdc-card__content {
+    padding: 1rem;
+  }
+
+  .loading-indicator {
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .mdc-button--danger {
+    background-color: var(--mdc-theme-error);
+    color: white;
+  }
+
+  .mdc-button {
+    width: 100%;
+  }
+
+  .mdc-button--disabled {
+    background-color: #e0e0e0;
+    color: #9e9e9e;
+    cursor: not-allowed;
+  }
+
+  /* Add Material Design ripple effect to buttons */
+  .mdc-button__ripple {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+</style>
