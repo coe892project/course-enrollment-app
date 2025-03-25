@@ -7,6 +7,8 @@ import pymongo
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
+from datetime import datetime
+from collections import defaultdict
 
 logger = logging.getLogger('uvicorn.error')
 
@@ -350,6 +352,146 @@ def update_prerequisite(course_id: str, prerequisite: Prerequisite):
 def delete_prerequisite(course_id: str):
     db.prerequisites.delete_one({"course_id": course_id})
     return {"message": "Prerequisite deleted"}
+
+
+# Course intention conversions
+@app.post("/process_intentions/")
+def process_course_intentions():
+    intentions = list(db.course_intentions.find())
+    if not intentions:
+        return {"message": "No course intentions to process"}
+    
+    course_intentions = defaultdict(list)
+    for intention in intentions:
+        key = (intention['course_code'], intention['semester'])
+        course_intentions[key].append(intention)
+    
+    results = {
+        "successful_enrollments": 0,
+        "failed_prerequisites": 0,
+        "failed_scheduling": 0,
+        "details": []
+    }
+    
+    for (course_code, semester), intentions in course_intentions.items():
+        course = db.courses.find_one({"course_code": course_code})
+        if not course:
+            results['details'].append(f"Course {course_code} not found")
+            continue
+        
+        offerings = list(db.course_offerings.find({
+            "course_code": course_code,
+            "semester": semester
+        }))
+        
+        num_sections_needed = (len(intentions) // 30) + 1
+        
+        while len(offerings) < num_sections_needed:
+            new_offering = {
+                "offering_id": f"{course_code}-{semester}-S{len(offerings)+1}",
+                "course_code": course_code,
+                "course_name": course['course_name'],
+                "instructor": "",
+                "semester": semester,
+                "available_seats": 30,
+                "course_time": course.get('course_time', [])
+            }
+            db.course_offerings.insert_one(new_offering)
+            offerings.append(new_offering)
+        
+        for intention in intentions:
+            student_id = intention['student_id']
+            student = db.students.find_one({"student_id": student_id})
+            if not student or not all(prereq in student.get('completed_courses', []) 
+                                    for prereq in course.get('prerequisites', [])):
+                results['failed_prerequisites'] += 1
+                results['details'].append(f"Student {student_id} missing prerequisites for {course_code}")
+                continue
+            
+            enrolled = False
+            for offering in sorted(offerings, key=lambda x: x['available_seats'], reverse=True):
+                if offering['available_seats'] > 0:
+                    if not offering.get('instructor'):
+                        if not assign_instructor(offering, course):
+                            continue
+                    
+                    if not offering.get('room_id'):
+                        if not assign_room(offering):
+                            continue
+                    
+                    enrollment = {
+                        "enrollment_id": f"{student_id}-{offering['offering_id']}",
+                        "student_id": student_id,
+                        "offering_id": offering['offering_id'],
+                        "enrollment_date": datetime.now().isoformat(),
+                        "grade": None
+                    }
+                    db.enrollments.insert_one(enrollment)
+                    db.course_offerings.update_one(
+                        {"offering_id": offering['offering_id']},
+                        {"$inc": {"available_seats": -1}}
+                    )
+                    db.students.update_one(
+                        {"student_id": student_id},
+                        {"$addToSet": {"enrolled_courses": offering['offering_id']}}
+                    )
+                    results['successful_enrollments'] += 1
+                    enrolled = True
+                    break
+            
+            if not enrolled:
+                results['failed_scheduling'] += 1
+                results['details'].append(f"Could not enroll student {student_id} in {course_code}")
+    
+    db.course_intentions.delete_many({})
+    return results
+
+def assign_instructor(offering, course):
+    instructors = list(db.instructors.find({
+        "courses_teachable": offering['course_code'],
+        "department_id": course.get('department_id', '')
+    }))
+    for instructor in instructors:
+        if is_instructor_available(instructor['instructor_id'], offering['course_time']):
+            db.course_offerings.update_one(
+                {"offering_id": offering['offering_id']},
+                {"$set": {"instructor": instructor['instructor_id']}}
+            )
+            return True
+    return False
+
+def assign_room(offering):
+    rooms = list(db.locations.find({
+        "available_seats": {"$gte": 30}
+    }))
+    for room in rooms:
+        if is_room_available(room['room_id'], offering['course_time']):
+            db.course_offerings.update_one(
+                {"offering_id": offering['offering_id']},
+                {"$set": {"room_id": room['room_id']}}
+            )
+            return True
+    return False
+
+def is_instructor_available(instructor_id, course_times):
+    instructor_offerings = list(db.course_offerings.find({
+        "instructor": instructor_id,
+        "course_time": {"$exists": True, "$ne": []}
+    }))
+    for other_offering in instructor_offerings:
+        if any(time in other_offering['course_time'] for time in course_times):
+            return False
+    return True
+
+def is_room_available(room_id, course_times):
+    room_offerings = list(db.course_offerings.find({
+        "room_id": room_id,
+        "course_time": {"$exists": True, "$ne": []}
+    }))
+    for other_offering in room_offerings:
+        if any(time in other_offering['course_time'] for time in course_times):
+            return False
+    return True
 
 # NOTE: Use fastapi dev main.py
 # if __name__ == "__main__":
