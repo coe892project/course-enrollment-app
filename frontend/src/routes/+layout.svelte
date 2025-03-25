@@ -37,7 +37,12 @@
       <nav>
         <a href="/" style="color: white; text-decoration: none; margin-right: 1rem;">Home</a>
         <a href="/courses" style="color: white; text-decoration: none; margin-right: 1rem;">Courses</a>
-        <a href="/dashboard" style="color: white; text-decoration: none;">Dashboard</a>
+        <a href="/dashboard" style="color: white; text-decoration: none; margin-right: 1rem;">Dashboard</a>
+        <a href="/departments" style="color: white; text-decoration: none; margin-right: 1rem;">Departments</a>
+        <a href="/faculties" style="color: white; text-decoration: none; margin-right: 1rem;">Faculties</a>
+        <a href="/instructors" style="color: white; text-decoration: none; margin-right: 1rem;">Instructors</a>
+        <a href="/locations" style="color: white; text-decoration: none; margin-right: 1rem;">Locations</a>
+        <a href="/programs" style="color: white; text-decoration: none;">Programs</a>
       </nav>
     </div>
   </header>
