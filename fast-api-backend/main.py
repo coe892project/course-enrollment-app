@@ -125,6 +125,15 @@ class Accounts(BaseModel):
     username: str
     password: str
 
+class CourseIntention(BaseModel):
+    intention_id: str
+    student_id: str
+    course_code: str
+    semester: str
+    timestamp: Optional[datetime] = None
+    status: Optional[str] = "pending"
+    error: Optional[str] = None
+
 # Auth functions
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -423,6 +432,93 @@ async def update_prerequisite(course_id: str, prerequisite: Prerequisite, curren
 async def delete_prerequisite(course_id: str, current_user: Annotated[Accounts, Depends(get_current_user)]):
     db.prerequisites.delete_one({"course_id": course_id})
     return {"message": "Prerequisite deleted"}
+
+@app.post("/course_intentions/", response_model=CourseIntention)
+async def create_intention(
+    intention: CourseIntention,
+    current_user: Annotated[Accounts, Depends(get_current_user)]
+):
+    intention.timestamp = datetime.utcnow()
+    
+    if not db.students.find_one({"student_id": intention.student_id}):
+        raise HTTPException(status_code=400, detail="Student not found")
+
+    if not db.courses.find_one({"course_code": intention.course_code}):
+        raise HTTPException(status_code=400, detail="Course not found")
+
+    existing = db.course_intentions.find_one({
+        "student_id": intention.student_id,
+        "course_code": intention.course_code,
+        "semester": intention.semester
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Intention already exists")
+    
+    db.course_intentions.insert_one(intention.model_dump())
+    return intention
+
+@app.get("/course_intentions/", response_model=List[CourseIntention])
+async def get_all_intentions(
+    current_user: Annotated[Accounts, Depends(get_current_user)],
+    status: Optional[str] = None,
+    student_id: Optional[str] = None,
+    semester: Optional[str] = None
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if student_id:
+        query["student_id"] = student_id
+    if semester:
+        query["semester"] = semester
+    
+    return list(db.course_intentions.find(query))
+
+@app.get("/course_intentions/{intention_id}", response_model=CourseIntention)
+async def get_intention(
+    intention_id: str,
+    current_user: Annotated[Accounts, Depends(get_current_user)]
+):
+    """Get a specific intention by ID"""
+    intention = db.course_intentions.find_one({"intention_id": intention_id})
+    if not intention:
+        raise HTTPException(status_code=404, detail="Intention not found")
+    return intention
+
+@app.put("/course_intentions/{intention_id}", response_model=CourseIntention)
+async def update_intention(
+    intention_id: str,
+    intention_update: CourseIntention,
+    current_user: Annotated[Accounts, Depends(get_current_user)]
+):
+    existing = db.course_intentions.find_one({"intention_id": intention_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Intention not found")
+    
+    if intention_update.student_id != existing["student_id"]:
+        raise HTTPException(status_code=400, detail="Cannot change student_id")
+    if intention_update.course_code != existing["course_code"]:
+        raise HTTPException(status_code=400, detail="Cannot change course_code")
+    
+    update_data = intention_update.model_dump(exclude_unset=True)
+    update_data["timestamp"] = datetime.utcnow()  # Update timestamp
+    
+    db.course_intentions.update_one(
+        {"intention_id": intention_id},
+        {"$set": update_data}
+    )
+    return db.course_intentions.find_one({"intention_id": intention_id})
+
+@app.delete("/course_intentions/{intention_id}")
+async def delete_intention(
+    intention_id: str,
+    current_user: Annotated[Accounts, Depends(get_current_user)]
+):
+    """Delete a course intention"""
+    result = db.course_intentions.delete_one({"intention_id": intention_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Intention not found")
+    return {"message": "Intention deleted"}
 
 # Course intention conversions
 @app.post("/process_intentions/")
