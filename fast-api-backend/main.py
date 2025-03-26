@@ -5,7 +5,6 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from typing import Annotated, List, Optional
 from pydantic import BaseModel
-from http.client import HTTPException
 import logging
 import os
 from urllib.parse import quote_plus
@@ -144,9 +143,9 @@ def get_password_hash(password):
 def authenticate_user(username: str, password: str):
     user = db.accounts.find_one({"username": username})
     if not user:
-        return False
+        return None
     if not verify_password(password, user["password"]):
-        return False
+        return None
     return user
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -171,7 +170,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except JWTError:
+    except JWTError as jwt_err:
+        logger.error(jwt_err)
         raise credentials_exception
     user = db.accounts.find_one({"username": token_data.username})
     if user is None:
