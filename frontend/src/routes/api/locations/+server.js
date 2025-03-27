@@ -1,4 +1,5 @@
 import { ENDPOINTS } from '$lib/config.js';
+import { json } from '@sveltejs/kit';
 
 /**
  * @typedef {Object} ApiLocation
@@ -28,5 +29,36 @@ export async function GET() {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
+  }
+}
+
+/**
+ * Create a new location
+ * @param {Object} params
+ * @param {Request} params.request
+ */
+export async function POST({ request }) {
+  try {
+    const locationData = await request.json();
+
+    const response = await fetch(ENDPOINTS.LOCATIONS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(locationData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `API error: ${response.status}`);
+    }
+
+    // Return the created location
+    const createdLocation = await response.json();
+    return json(createdLocation);
+  } catch (error) {
+    console.error('Error creating location:', error);
+    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }
