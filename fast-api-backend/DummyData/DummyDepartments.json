@@ -1,12 +1,7 @@
 [
     {
-        "department_id": "COE",
-        "department_name": "Computer Engineering",
-        "faculty_id": "F001"
-    },
-    {
-        "department_id": "MTH",
-        "department_name": "Mathematics",
-        "faculty_id": "F002"
+      "department_id": "COE",
+      "department_name": "Electrical and Computer Engineering",
+      "faculty_id": "FEAS"
     }
-]
+  ]

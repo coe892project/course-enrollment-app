@@ -54,13 +54,15 @@ class TokenData(BaseModel):
 class Course(BaseModel):
     course_code: str
     course_name: str
-    section: str
+    section: Optional[str] = None
     semester: str
     prerequisites: List[str] = []
     corequisites: List[str] = []
     available_seats: int
     instructor: str
-    course_time: List[str] = []
+    lecture_time: List[str] = []
+    possible_lab_times: List[str] = []
+    department_id: Optional[str] = None
 
 class Student(BaseModel):
     student_id: str
@@ -501,7 +503,7 @@ async def update_intention(
         raise HTTPException(status_code=400, detail="Cannot change course_code")
     
     update_data = intention_update.model_dump(exclude_unset=True)
-    update_data["timestamp"] = datetime.utcnow()  # Update timestamp
+    update_data["timestamp"] = datetime.strftime("%d/%m/%Y %H:%M:%S")
     
     db.course_intentions.update_one(
         {"intention_id": intention_id},
@@ -523,7 +525,7 @@ async def delete_intention(
 # Course intention conversions
 @app.post("/process_intentions/")
 async def process_course_intentions(current_user: Annotated[Accounts, Depends(get_current_user)]):
-    intentions = list(db.course_intentions.find())
+    intentions = list(db.course_intentions.find({"status": "pending"}))
     if not intentions:
         return {"message": "No course intentions to process"}
     
@@ -536,89 +538,140 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
         "successful_enrollments": 0,
         "failed_prerequisites": 0,
         "failed_scheduling": 0,
+        "sections_created": 0,
         "details": []
     }
-    
+
     for (course_code, semester), intentions in course_intentions.items():
-        course = db.courses.find_one({"course_code": course_code})
-        if not course:
-            results['details'].append(f"Course {course_code} not found")
-            continue
-        
-        offerings = list(db.course_offerings.find({
+        offering = db.course_offerings.find_one({
             "course_code": course_code,
             "semester": semester
-        }))
-        
-        num_sections_needed = (len(intentions) // 30) + 1
-        
-        while len(offerings) < num_sections_needed:
-            new_offering = {
-                "offering_id": f"{course_code}-{semester}-S{len(offerings)+1}",
+        })
+
+        if not offering:
+            offering = {
+                "offering_id": f"{course_code}-{semester}",
                 "course_code": course_code,
-                "course_name": course['course_name'],
-                "instructor": "",
+                "course_name": f"{course_code} Lecture",
                 "semester": semester,
-                "available_seats": 30,
-                "course_time": course.get('course_time', [])
+                "year": datetime.now().year,
+                "instructor": "",
+                "room_id": "",
+                "course_time": [],
+                "max_sections": 1,
+                "seats_per_section": 30
             }
-            db.course_offerings.insert_one(new_offering)
-            offerings.append(new_offering)
-        
+            db.course_offerings.insert_one(offering)
+            results['details'].append(f"Created new offering for {course_code}")
+
+        if not offering.get('instructor'):
+            instructor_assigned = assign_instructor(offering)
+            if not instructor_assigned:
+                results['details'].append(f"Failed to assign instructor for {course_code}")
+                continue
+
+        if not offering.get('room_id'):
+            room_assigned = assign_room(offering)
+            if not room_assigned:
+                results['details'].append(f"Failed to assign room for {course_code}")
+                continue
+
+        sections = list(db.courses.find({
+            "course_code": course_code,
+            "semester": semester
+        }).sort("section", 1))
+
+        num_sections_needed = (len(intentions) // offering['seats_per_section']) + 1
+
+        while len(sections) < num_sections_needed:
+            section_num = len(sections) + 1
+            new_section = {
+                "course_code": course_code,
+                "course_name": f"{course_code} Section {section_num}",
+                "semester": semester,
+                "section": str(section_num),
+                "available_seats": offering['seats_per_section'],
+                "prerequisites": [],
+                "corequisites": [],
+                "course_time": offering['course_time'],  # Same as offering
+                "instructor": offering['instructor'],  # Same as offering
+                "room_id": offering['room_id']  # Same as offering
+            }
+            db.courses.insert_one(new_section)
+            sections.append(new_section)
+            results['sections_created'] += 1
+            results['details'].append(f"Created section {section_num} for {course_code}")
+
+        # Process each intention
         for intention in intentions:
             student_id = intention['student_id']
             student = db.students.find_one({"student_id": student_id})
-            if not student or not all(prereq in student.get('completed_courses', []) 
-                                    for prereq in course.get('prerequisites', [])):
-                results['failed_prerequisites'] += 1
-                results['details'].append(f"Student {student_id} missing prerequisites for {course_code}")
-                continue
             
+            # Check prerequisites against first section
+            if not student or not all(prereq in student.get('completed_courses', []) 
+                            for prereq in sections[0].get('prerequisites', [])):
+                await update_intention(
+                    intention['intention_id'],
+                    CourseIntention(
+                        intention_id=intention['intention_id'],
+                        student_id=student_id,
+                        course_code=course_code,
+                        semester=semester,
+                        status="failed",
+                        error="Missing prerequisites"
+                    ),
+                    current_user
+                )
+                results['failed_prerequisites'] += 1
+                continue
+
             enrolled = False
-            for offering in sorted(offerings, key=lambda x: x['available_seats'], reverse=True):
-                if offering['available_seats'] > 0:
-                    if not offering.get('instructor'):
-                        if not assign_instructor(offering, course):
-                            continue
-                    
-                    if not offering.get('room_id'):
-                        if not assign_room(offering):
-                            continue
-                    
-                    enrollment = {
-                        "enrollment_id": f"{student_id}-{offering['offering_id']}",
-                        "student_id": student_id,
-                        "offering_id": offering['offering_id'],
-                        "enrollment_date": datetime.now().isoformat(),
-                        "grade": None
-                    }
-                    db.enrollments.insert_one(enrollment)
-                    db.course_offerings.update_one(
-                        {"offering_id": offering['offering_id']},
+            for section in sections:
+                if section['available_seats'] > 0:
+                    create_enrollment(student_id, section['_id'])
+                    db.courses.update_one(
+                        {"_id": section['_id']},
                         {"$inc": {"available_seats": -1}}
                     )
-                    db.students.update_one(
-                        {"student_id": student_id},
-                        {"$addToSet": {"enrolled_courses": offering['offering_id']}}
+                    await update_intention(
+                        intention['intention_id'],
+                        CourseIntention(
+                            intention_id=intention['intention_id'],
+                            student_id=student_id,
+                            course_code=course_code,
+                            semester=semester,
+                            status="enrolled",
+                            section=section['section']
+                        ),
+                        current_user
                     )
                     results['successful_enrollments'] += 1
                     enrolled = True
                     break
-            
+
             if not enrolled:
+                await update_intention(
+                    intention['intention_id'],
+                    CourseIntention(
+                        intention_id=intention['intention_id'],
+                        student_id=student_id,
+                        course_code=course_code,
+                        semester=semester,
+                        status="failed",
+                        error="No available seats"
+                    ),
+                    current_user
+                )
                 results['failed_scheduling'] += 1
-                results['details'].append(f"Could not enroll student {student_id} in {course_code}")
-    
-    db.course_intentions.delete_many({})
+
     return results
 
-def assign_instructor(offering, course):
+def assign_instructor(offering):
     instructors = list(db.instructors.find({
-        "courses_teachable": offering['course_code'],
-        "department_id": course.get('department_id', '')
+        "courses_teachable": offering['course_code']
     }))
     for instructor in instructors:
-        if is_instructor_available(instructor['instructor_id'], offering['course_time']):
+        if is_instructor_available(instructor['instructor_id'], offering.get('course_time', [])):
             db.course_offerings.update_one(
                 {"offering_id": offering['offering_id']},
                 {"$set": {"instructor": instructor['instructor_id']}}
@@ -627,11 +680,9 @@ def assign_instructor(offering, course):
     return False
 
 def assign_room(offering):
-    rooms = list(db.locations.find({
-        "available_seats": {"$gte": 30}
-    }))
+    rooms = list(db.locations.find({"available_seats": {"$gte": 30}}))
     for room in rooms:
-        if is_room_available(room['room_id'], offering['course_time']):
+        if is_room_available(room['room_id'], offering.get('course_time', [])):
             db.course_offerings.update_one(
                 {"offering_id": offering['offering_id']},
                 {"$set": {"room_id": room['room_id']}}
@@ -640,21 +691,25 @@ def assign_room(offering):
     return False
 
 def is_instructor_available(instructor_id, course_times):
-    instructor_offerings = list(db.course_offerings.find({
+    conflicts = db.course_offerings.count_documents({
         "instructor": instructor_id,
-        "course_time": {"$exists": True, "$ne": []}
-    }))
-    for other_offering in instructor_offerings:
-        if any(time in other_offering['course_time'] for time in course_times):
-            return False
-    return True
+        "course_time": {"$in": course_times}
+    })
+    return conflicts == 0
 
 def is_room_available(room_id, course_times):
-    room_offerings = list(db.course_offerings.find({
+    conflicts = db.course_offerings.count_documents({
         "room_id": room_id,
-        "course_time": {"$exists": True, "$ne": []}
-    }))
-    for other_offering in room_offerings:
-        if any(time in other_offering['course_time'] for time in course_times):
-            return False
-    return True
+        "course_time": {"$in": course_times}
+    })
+    return conflicts == 0
+
+def create_enrollment(student_id, section_id):
+    enrollment = {
+        "enrollment_id": f"{student_id}-{section_id}",
+        "student_id": student_id,
+        "section_id": str(section_id),
+        "enrollment_date": datetime.now().isoformat(),
+        "grade": None
+    }
+    db.enrollments.insert_one(enrollment)

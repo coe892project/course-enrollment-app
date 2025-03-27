@@ -1,24 +1,28 @@
 [
     {
-        "course_code": "MTH514",
-        "course_name": "Probability and Stochastic Processes",
-        "section": "01",
-        "semester": "Fall",
-        "prerequisites": [],
-        "corequisites": [],
-        "available_seats": 50,
-        "instructor": "Dr. Ali Rezai",
-        "course_time": ["Mon 10:00-12:00", "Fri 17:00-18:00"]
+      "course_code": "COE318",
+      "course_name": "Software Systems",
+      "semester": "Fall 2023",
+      "available_seats": 40,
+      "prerequisites": ["COE228"],
+      "corequisites": [],
+      "course_time": ["Mon 14:00-16:00", "Wed 14:00-16:00"],
+      "instructor": "PROF2001",
+      "room_id": "ENG103",
+      "section": "1",
+      "is_lecture": true
     },
     {
-        "course_code": "MTH110",
-        "course_name": "Calculus I",
-        "section": "02",
-        "semester": "Fall",
-        "prerequisites": [],
-        "corequisites": [],
-        "available_seats": 40,
-        "instructor": "Dr. Jonah Horowitz",
-        "course_time": ["Tue 13:00-15:00", "Thu 11:00-12:00"]
+      "course_code": "COE608",
+      "course_name": "Microprocessor Systems",
+      "semester": "Fall 2023",
+      "available_seats": 35,
+      "prerequisites": ["COE538"],
+      "corequisites": [],
+      "course_time": ["Tue 10:00-12:00", "Thu 10:00-12:00"],
+      "instructor": "PROF2002",
+      "room_id": "ENG204",
+      "section": "1",
+      "is_lecture": true
     }
-]
+  ]

@@ -1,37 +1,18 @@
-
 [
     {
-    "intention_id": "I1",
-    "student_id": "500123456",
-    "course_code": "COE318",
-    "course_name": "Software Systems Design",
-    "semester": "Fall2024",
-    "timestamp": "2024-03-20T09:15:00Z",
-    "status": "pending",
-    "student_name": "John Smith",
-    "program": "BEng Computer Engineering"
+      "intention_id": "COE_INT001",
+      "student_id": "500112233",
+      "course_code": "COE318",
+      "semester": "Fall 2023",
+      "timestamp": "2023-08-15T09:30:00",
+      "status": "pending"
     },
     {
-    "intention_id": "I2",
-    "student_id": "500234567",
-    "course_code": "COE328",
-    "course_name": "Digital Systems",
-    "semester": "Fall2024",
-    "timestamp": "2024-03-21T11:30:00Z",
-    "status": "pending",
-    "student_name": "Emma Johnson",
-    "program": "BEng Computer Engineering"
-    },
-    {
-    "intention_id": "I3",
-    "student_id": "500345678",
-    "course_code": "COE538",
-    "course_name": "Computer Architecture",
-    "semester": "Fall2024",
-    "timestamp": "2024-03-22T14:45:00Z",
-    "status": "pending",
-    "student_name": "Michael Brown",
-    "program": "BEng Computer Engineering",
-    "notes": "Want evening section if available"
+      "intention_id": "COE_INT002",
+      "student_id": "500445566",
+      "course_code": "COE608",
+      "semester": "Fall 2023",
+      "timestamp": "2023-08-15T09:35:00",
+      "status": "pending"
     }
-]
+  ]

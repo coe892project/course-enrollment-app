@@ -1,14 +1,14 @@
 [
     {
-        "room_id": "KHE101",
-        "room_name": "Kerr Hall East 101",
-        "available_seats": 60,
-        "available_times": ["MWF 10:00 AM", "TTH 1:00 PM"]
+      "room_id": "ENG103",
+      "room_name": "Engineering Building 103",
+      "available_seats": 45,
+      "available_times": ["Mon 8:00-20:00", "Wed 8:00-20:00"]
     },
     {
-        "room_id": "KHW153",
-        "room_name": "Kerr Hall West 153",
-        "available_seats": 50,
-        "available_times": ["MWF 2:00 PM", "TTH 10:00 AM"]
+      "room_id": "ENG204",
+      "room_name": "Engineering Building 204",
+      "available_seats": 40,
+      "available_times": ["Tue 8:00-20:00", "Thu 8:00-20:00"]
     }
-]
+  ]

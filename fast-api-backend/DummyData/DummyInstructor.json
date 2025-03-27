@@ -1,18 +1,18 @@
 [
     {
-        "instructor_id": "I001",
-        "first_name": "Jonah",
-        "last_name": "Horowitz",
-        "department_id": "MTH",
-        "title": "Professor",
-        "courses_teachable": ["MTH110", "MTH240"]
+      "instructor_id": "PROF2001",
+      "first_name": "David",
+      "last_name": "Wilson",
+      "department_id": "COE",
+      "title": "Professor",
+      "courses_teachable": ["COE318", "COE428"]
     },
     {
-        "instructor_id": "I002",
-        "first_name": "Omar",
-        "last_name": "Falou",
-        "department_id": "CPS",
-        "title": "Lecturer",
-        "courses_teachable": ["CPS688", "CPS843"]
+      "instructor_id": "PROF2002",
+      "first_name": "Nadia",
+      "last_name": "Khan",
+      "department_id": "COE",
+      "title": "Associate Professor",
+      "courses_teachable": ["COE608", "COE808"]
     }
-]
+  ]
