@@ -1,6 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import { ENDPOINTS } from '$lib/config.js';
+  import { getFaculties } from '$lib/api.js';
+  import { token } from '$lib/stores.js';
 
   /**
    * @typedef {Object} Faculty
@@ -15,13 +17,8 @@
 
   onMount(async () => {
     try {
-      const response = await fetch('/api/faculties');
-
-      if (!response.ok) {
-        throw new Error('Failed to load faculties');
-      }
-
-      faculties = await response.json();
+      // Use the getFaculties function that includes the token
+      faculties = await getFaculties();
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     } finally {

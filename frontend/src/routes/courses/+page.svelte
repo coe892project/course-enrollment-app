@@ -1,7 +1,14 @@
 <script>
-  import { user } from '$lib/stores';
+  import { user, token } from '$lib/stores';
   import CourseCard from '$lib/CourseCard.svelte';
   import { onMount } from 'svelte';
+  import {
+    getCourses,
+    getStudents,
+    getEnrollments,
+    getCourseOfferings,
+    createEntity
+  } from '$lib/api';
 
   /**
    * @typedef {Object} Course
@@ -85,25 +92,19 @@
 
   onMount(async () => {
     try {
-      // Load all data in parallel
-      const [coursesResponse, studentsResponse, enrollmentsResponse, offeringsResponse] = await Promise.all([
-        fetch('/api/courses'),
-        fetch('/api/students/'),
-        fetch('/api/enrollments/'),
-        fetch('/api/course_offerings/')
+      // Load all data in parallel using API functions that include the token
+      const [coursesData, studentsData, enrollmentsData, offeringsData] = await Promise.all([
+        getCourses(),
+        getStudents(),
+        getEnrollments(),
+        getCourseOfferings()
       ]);
 
-      // Check responses
-      if (!coursesResponse.ok) throw new Error('Failed to load courses');
-      if (!studentsResponse.ok) throw new Error('Failed to load students');
-      if (!enrollmentsResponse.ok) throw new Error('Failed to load enrollments');
-      if (!offeringsResponse.ok) throw new Error('Failed to load course offerings');
-
-      // Parse responses
-      courses = await coursesResponse.json();
-      students = await studentsResponse.json();
-      enrollments = await enrollmentsResponse.json();
-      courseOfferings = await offeringsResponse.json();
+      // Set the data
+      courses = coursesData;
+      students = studentsData;
+      enrollments = enrollmentsData;
+      courseOfferings = offeringsData;
 
       // Set default selected student
       if (students.length > 0) {
@@ -132,22 +133,17 @@
     try {
       isLoading = true;
 
-      // Load all data in parallel
-      const [coursesResponse, enrollmentsResponse, offeringsResponse] = await Promise.all([
-        fetch('/api/courses'),
-        fetch('/api/enrollments/'),
-        fetch('/api/course_offerings/')
+      // Load all data in parallel using API functions that include the token
+      const [coursesData, enrollmentsData, offeringsData] = await Promise.all([
+        getCourses(),
+        getEnrollments(),
+        getCourseOfferings()
       ]);
 
-      // Check responses
-      if (!coursesResponse.ok) throw new Error('Failed to load courses');
-      if (!enrollmentsResponse.ok) throw new Error('Failed to load enrollments');
-      if (!offeringsResponse.ok) throw new Error('Failed to load course offerings');
-
-      // Parse responses
-      courses = await coursesResponse.json();
-      enrollments = await enrollmentsResponse.json();
-      courseOfferings = await offeringsResponse.json();
+      // Set the data
+      courses = coursesData;
+      enrollments = enrollmentsData;
+      courseOfferings = offeringsData;
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     } finally {
@@ -170,29 +166,17 @@
     error = '';
 
     try {
-      const response = await fetch('/api/enroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: selectedStudentId,
-          courseId
-        })
+      // Use createEntity with the token from the store
+      await createEntity('/api/enroll', {
+        userId: selectedStudentId,
+        courseId
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enrollment failed');
-      }
-
-      // Get the enrollment result
-      await response.json();
 
       // Show success message
       enrollmentSuccess = `Successfully enrolled student ${selectedStudentId} in ${courseId}`;
 
       // Reload data from the backend to get the updated state
       await reloadData();
-
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     }
@@ -214,19 +198,11 @@
     isLoading = true;
 
     try {
-      const response = await fetch('/api/unenroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: selectedStudentId,
-          courseId
-        })
+      // Use createEntity with the token from the store
+      await createEntity('/api/unenroll', {
+        userId: selectedStudentId,
+        courseId
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to unenroll student');
-      }
 
       // Show success message
       unenrollSuccess = `Successfully unenrolled student from ${courseId}`;
@@ -235,6 +211,7 @@
       await reloadData();
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
+    } finally {
       isLoading = false;
     }
   }

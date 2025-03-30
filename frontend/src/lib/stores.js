@@ -1,7 +1,8 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-export const courses = writable([]);
+// Define the course type to match the API response
+export const courses = writable(/** @type {any[]} */ ([]));
 
 // User store with persistence
 const storedUser = browser && localStorage.getItem('user');

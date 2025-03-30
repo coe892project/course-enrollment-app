@@ -1,6 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import { ENDPOINTS } from '$lib/config.js';
+  import { getDepartments, getFaculties } from '$lib/api.js';
+  import { token } from '$lib/stores.js';
 
   /**
    * @typedef {Object} Department
@@ -24,19 +26,15 @@
 
   onMount(async () => {
     try {
-      // Load departments and faculties in parallel
-      const [departmentsResponse, facultiesResponse] = await Promise.all([
-        fetch('/api/departments'),
-        fetch('/api/faculties')
+      // Load departments and faculties in parallel using API functions that include the token
+      const [departmentsData, facultiesData] = await Promise.all([
+        getDepartments(),
+        getFaculties()
       ]);
 
-      // Check responses
-      if (!departmentsResponse.ok) throw new Error('Failed to load departments');
-      if (!facultiesResponse.ok) throw new Error('Failed to load faculties');
-
-      // Parse responses
-      departments = await departmentsResponse.json();
-      faculties = await facultiesResponse.json();
+      // Set the data
+      departments = departmentsData;
+      faculties = facultiesData;
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     } finally {

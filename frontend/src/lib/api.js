@@ -10,27 +10,38 @@ import { goto } from '$app/navigation';
  * @returns {Promise<{access_token: string, token_type: string}>} - The token response
  */
 export async function login(username, password) {
-  // Create form data for the backend API
-  const formData = new URLSearchParams();
-  formData.append('username', username);
-  formData.append('password', password);
+  try {
+    console.log(`Attempting to login with username: ${username}`);
 
-  // Make a POST request to the backend login API
-  const response = await fetch(ENDPOINTS.LOGIN, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: formData
-  });
+    // Create form data for the backend API
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Invalid credentials');
+    // Make a POST request to the backend login API
+    const response = await fetch(ENDPOINTS.LOGIN, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData
+    });
+
+    console.log(`Login response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Invalid credentials');
+    }
+
+    // Return the token response
+    const tokenData = await response.json();
+    console.log('Login successful, token received');
+    return tokenData;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
   }
-
-  // Return the token response
-  return await response.json();
 }
 
 /**
@@ -70,9 +81,24 @@ export async function apiRequest(url, options = {}) {
  * @returns {Promise<any[]>} - Array of courses
  */
 export async function getCourses() {
-  const response = await apiRequest(ENDPOINTS.COURSES);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.COURSES, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -84,9 +110,24 @@ export async function getCourses() {
  * @returns {Promise<any[]>} - Array of departments
  */
 export async function getDepartments() {
-  const response = await apiRequest(ENDPOINTS.DEPARTMENTS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.DEPARTMENTS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -98,9 +139,24 @@ export async function getDepartments() {
  * @returns {Promise<any[]>} - Array of faculties
  */
 export async function getFaculties() {
-  const response = await apiRequest(ENDPOINTS.FACULTIES);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.FACULTIES, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -112,9 +168,24 @@ export async function getFaculties() {
  * @returns {Promise<any[]>} - Array of instructors
  */
 export async function getInstructors() {
-  const response = await apiRequest(ENDPOINTS.INSTRUCTORS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.INSTRUCTORS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -126,9 +197,24 @@ export async function getInstructors() {
  * @returns {Promise<any[]>} - Array of locations
  */
 export async function getLocations() {
-  const response = await apiRequest(ENDPOINTS.LOCATIONS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.LOCATIONS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -140,9 +226,24 @@ export async function getLocations() {
  * @returns {Promise<any[]>} - Array of programs
  */
 export async function getPrograms() {
-  const response = await apiRequest(ENDPOINTS.PROGRAMS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.PROGRAMS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -154,9 +255,24 @@ export async function getPrograms() {
  * @returns {Promise<any[]>} - Array of prerequisites
  */
 export async function getPrerequisites() {
-  const response = await apiRequest(ENDPOINTS.PREREQUISITES);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.PREREQUISITES, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -168,9 +284,24 @@ export async function getPrerequisites() {
  * @returns {Promise<any[]>} - Array of enrollments
  */
 export async function getEnrollments() {
-  const response = await apiRequest(ENDPOINTS.ENROLLMENTS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.ENROLLMENTS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -182,9 +313,24 @@ export async function getEnrollments() {
  * @returns {Promise<any[]>} - Array of course offerings
  */
 export async function getCourseOfferings() {
-  const response = await apiRequest(ENDPOINTS.COURSE_OFFERINGS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.COURSE_OFFERINGS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -196,9 +342,24 @@ export async function getCourseOfferings() {
  * @returns {Promise<any[]>} - Array of students
  */
 export async function getStudents() {
-  const response = await apiRequest(ENDPOINTS.STUDENTS);
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.STUDENTS, {
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
+  });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     throw new Error(`API error: ${response.status}`);
   }
 
@@ -212,15 +373,27 @@ export async function getStudents() {
  * @returns {Promise<any>} - The created entity
  */
 export async function createEntity(endpoint, data) {
-  const response = await apiRequest(endpoint, {
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
     },
     body: JSON.stringify(data)
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
   }
@@ -236,15 +409,27 @@ export async function createEntity(endpoint, data) {
  * @returns {Promise<any>} - The updated entity
  */
 export async function updateEntity(endpoint, id, data) {
-  const response = await apiRequest(`${endpoint}${id}`, {
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(`${endpoint}${id}`, {
     method: 'PUT',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
     },
     body: JSON.stringify(data)
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
   }
@@ -259,11 +444,25 @@ export async function updateEntity(endpoint, id, data) {
  * @returns {Promise<void>}
  */
 export async function deleteEntity(endpoint, id) {
-  const response = await apiRequest(`${endpoint}${id}`, {
-    method: 'DELETE'
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(`${endpoint}${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': authToken ? `Bearer ${authToken}` : ''
+    }
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto('/login');
+    }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
   }

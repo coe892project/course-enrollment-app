@@ -26,9 +26,15 @@ export async function GET({ request }) {
     // Get the authorization token from the request headers
     const authHeader = request.headers.get('Authorization');
 
+    // Get the token from the store if no authorization header is provided
+    const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
+
     // Make a GET request to the backend API with the authorization token
-    // Use apiRequest to ensure proper token handling
-    const response = await apiRequest(ENDPOINTS.COURSES);
+    const response = await fetch(ENDPOINTS.COURSES, {
+      headers: {
+        'Authorization': authToken
+      }
+    });
 
     // If unauthorized, return 401 to trigger logout in the frontend
     if (response.status === 401) {
@@ -75,11 +81,18 @@ export async function POST({ request }) {
   try {
     const courseData = await request.json();
 
-    // Use apiRequest to ensure proper token handling
-    const response = await apiRequest(ENDPOINTS.COURSES, {
+    // Get the authorization token from the request headers
+    const authHeader = request.headers.get('Authorization');
+
+    // Get the token from the store if no authorization header is provided
+    const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
+
+    // Make a POST request to the backend API with the authorization token
+    const response = await fetch(ENDPOINTS.COURSES, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': authToken
       },
       body: JSON.stringify(courseData)
     });

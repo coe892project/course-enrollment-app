@@ -3,6 +3,7 @@
   import CourseCard from '$lib/CourseCard.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { getCourses } from '$lib/api';
 
   // Redirect to login if not authenticated
   onMount(async () => {
@@ -11,25 +12,13 @@
       return;
     }
 
-    // Fetch courses with authentication token
+    // Fetch courses using the API function that includes the token
     try {
-      const response = await fetch('/api/courses', {
-        headers: {
-          'Authorization': $token ? `Bearer ${$token}` : ''
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        courses.set(data);
-      } else if (response.status === 401) {
-        // Token expired or invalid
-        user.set(null);
-        token.set(null);
-        goto('/login');
-      }
+      const coursesData = await getCourses();
+      courses.set(coursesData);
     } catch (error) {
       console.error('Error loading courses:', error);
+      // If the error is due to authentication, the apiRequest function will handle the redirect
     }
   });
 </script>

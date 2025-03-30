@@ -1,5 +1,6 @@
 import { ENDPOINTS } from '$lib/config.js';
-import { apiRequest } from '$lib/api.js';
+import { token } from '$lib/stores.js';
+import { get } from 'svelte/store';
 
 /**
  * @typedef {Object} ApiFaculty
@@ -13,8 +14,18 @@ import { apiRequest } from '$lib/api.js';
  */
 export async function GET({ request }) {
   try {
-    // Use apiRequest to ensure proper token handling
-    const response = await apiRequest(ENDPOINTS.FACULTIES);
+    // Get the authorization token from the request headers
+    const authHeader = request.headers.get('Authorization');
+
+    // Get the token from the store if no authorization header is provided
+    const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
+
+    // Make a GET request to the backend API with the authorization token
+    const response = await fetch(ENDPOINTS.FACULTIES, {
+      headers: {
+        'Authorization': authToken
+      }
+    });
 
     // If unauthorized, return 401 to trigger logout in the frontend
     if (response.status === 401) {

@@ -28,25 +28,15 @@
         // Store the token
         token.set(tokenData.access_token);
 
-        // Fetch user info using the token
-        const userResponse = await fetch(`${ENDPOINTS.ACCOUNTS}${username}`, {
-          headers: {
-            'Authorization': `Bearer ${tokenData.access_token}`
-          }
+        // Create a simple user object since we don't have a real user API
+        // In a real app, you would fetch user data from the backend
+        user.set({
+          id: username,
+          name: username,
+          role: 'user'
         });
 
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          // Set user data
-          user.set({
-            id: userData.username,
-            name: userData.username,
-            role: 'user'
-          });
-          goto('/dashboard');
-        } else {
-          error = 'Failed to fetch user data';
-        }
+        goto('/dashboard');
       } catch (err) {
         console.error(err);
         error = err instanceof Error ? err.message : 'Invalid username or password';
