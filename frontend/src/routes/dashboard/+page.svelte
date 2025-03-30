@@ -150,32 +150,33 @@
   /**
    * Submit the instructor creation form
    */
-  async function createInstructor() {
-    instructorCreationError = '';
-    instructorCreationSuccess = '';
+  async function handleUnenroll(courseId) {
+    if (!selectedStudentId) {
+      error = 'No student selected';
+      return;
+    }
+
+    unenrollSuccess = '';
+    error = '';
+    isLoading = true;
 
     try {
-      // Validate required fields
-      if (!newInstructor.instructor_id || !newInstructor.first_name || !newInstructor.last_name ||
-          !newInstructor.department_id || !newInstructor.title) {
-        instructorCreationError = 'Please fill in all required fields';
-        return;
-      }
-
       const authToken = get(token);
-      // Send the instructor data to the API
-      const response = await fetch('/api/instructors', {
+      const response = await fetch('/api/unenroll', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`
         },
-        body: JSON.stringify(newInstructor)
+        body: JSON.stringify({
+          userId: selectedStudentId,
+          courseId
+        })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create instructor');
+        throw new Error(errorData.error || 'Failed to unenroll student');
       }
 
       // Get the created instructor
@@ -285,11 +286,12 @@
     isLoading = true;
 
     try {
+      const authToken = get(token);
       const response = await fetch('/api/unenroll', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${$user.token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify({
           userId: selectedStudentId,
@@ -406,17 +408,18 @@
     try {
       // Validate required fields
       if (!newCourse.course_code || !newCourse.course_name || !newCourse.section ||
-          !newCourse.semester || !newCourse.instructor) {
+        !newCourse.semester || !newCourse.instructor) {
         courseCreationError = 'Please fill in all required fields';
         return;
       }
 
+      const authToken = get(token);
       // Send the course data to the API
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${$user.token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify(newCourse)
       });
@@ -489,12 +492,13 @@
         return;
       }
 
+      const authToken = get(token);
       // Send the location data to the API
       const response = await fetch('/api/locations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${$user.token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify(newLocation)
       });
