@@ -1,7 +1,8 @@
 <script>
-  import { user } from '$lib/stores';
+  import { user, token } from '$lib/stores';
   import CourseCard from '$lib/CourseCard.svelte';
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
     import { getCourseOfferings, getCourses, getDepartments, getEnrollments, getStudents } from '$lib/api';
 
   // Form state for creating a new instructor
@@ -161,12 +162,13 @@
         return;
       }
 
+      const authToken = get(token);
       // Send the instructor data to the API
       const response = await fetch('/api/instructors', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${$user.token}`
+          Authorization: `Bearer ${authToken}`
         },
         body: JSON.stringify(newInstructor)
       });
