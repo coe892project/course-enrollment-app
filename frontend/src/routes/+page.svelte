@@ -1,14 +1,33 @@
 <script>
-  import { courses, user } from '$lib/stores';
+  import { courses, user, token } from '$lib/stores';
   import CourseCard from '$lib/CourseCard.svelte';
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
 
-  // Fetch courses on component mount
+  // Redirect to login if not authenticated
   onMount(async () => {
+    if (!$user) {
+      goto('/login');
+      return;
+    }
+
+    // Fetch courses with authentication token
     try {
-      const response = await fetch('/api/courses');
-      const data = await response.json();
-      courses.set(data);
+      const response = await fetch('/api/courses', {
+        headers: {
+          'Authorization': $token ? `Bearer ${$token}` : ''
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        courses.set(data);
+      } else if (response.status === 401) {
+        // Token expired or invalid
+        user.set(null);
+        token.set(null);
+        goto('/login');
+      }
     } catch (error) {
       console.error('Error loading courses:', error);
     }
@@ -20,28 +39,30 @@
 </svelte:head>
 
 <main>
-  <div class="header-container">
-    <a href="/courses" class="mdc-typography--headline4 page-title">Available Courses</a>
-    <div class="user-section">
-      <span class="mdc-typography--body1 welcome-text">Welcome, {$user.name}!</span>
-      <a href="/dashboard" class="mdc-button mdc-button--raised">
-        <span class="mdc-button__ripple"></span>
-        <span class="mdc-button__label">My Dashboard</span>
-      </a>
-    </div>
-  </div>
-
-  <div class="courses-grid">
-    {#each $courses as course}
-      <CourseCard {course} />
-    {:else}
-      <div class="mdc-card info-card">
-        <div class="mdc-card__content">
-          <p class="mdc-typography--body1">No courses available at the moment</p>
-        </div>
+  {#if $user}
+    <div class="header-container">
+      <a href="/courses" class="mdc-typography--headline4 page-title">Available Courses</a>
+      <div class="user-section">
+        <span class="mdc-typography--body1 welcome-text">Welcome, {$user.name}!</span>
+        <a href="/dashboard" class="mdc-button mdc-button--raised">
+          <span class="mdc-button__ripple"></span>
+          <span class="mdc-button__label">My Dashboard</span>
+        </a>
       </div>
-    {/each}
-  </div>
+    </div>
+
+    <div class="courses-grid">
+      {#each $courses as course}
+        <CourseCard {course} />
+      {:else}
+        <div class="mdc-card info-card">
+          <div class="mdc-card__content">
+            <p class="mdc-typography--body1">No courses available at the moment</p>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </main>
 
 <style>

@@ -1,69 +1,84 @@
 <script>
-    import { user } from '$lib/stores';
+    import { user, token } from '$lib/stores';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
-  
-    let email = '';
+    import { login } from '$lib/api';
+    import { ENDPOINTS } from '$lib/config';
+
+    let username = '';
     let password = '';
     let error = '';
     let isLoading = false;
-  
+
     // Redirect if already logged in
     onMount(() => {
       if ($user) {
         goto('/dashboard');
       }
     });
-  
+
     async function handleLogin() {
       isLoading = true;
       error = '';
-  
+
       try {
-        const response = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+        // Use the login function from api.js
+        const tokenData = await login(username, password);
+
+        // Store the token
+        token.set(tokenData.access_token);
+
+        // Fetch user info using the token
+        const userResponse = await fetch(`${ENDPOINTS.ACCOUNTS}${username}`, {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`
+          }
         });
-  
-        if (response.ok) {
-          const userData = await response.json();
-          user.set(userData);
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          // Set user data
+          user.set({
+            id: userData.username,
+            name: userData.username,
+            role: 'user'
+          });
           goto('/dashboard');
         } else {
-          error = 'Invalid email or password';
+          error = 'Failed to fetch user data';
         }
       } catch (err) {
-        error = 'Connection error. Please try again.';
+        console.error(err);
+        error = err instanceof Error ? err.message : 'Invalid username or password';
       } finally {
         isLoading = false;
       }
     }
   </script>
-  
+
   <svelte:head>
     <title>Login - Course Enrollment</title>
   </svelte:head>
-  
+
   <main class="max-w-md mx-auto mt-20 p-6 bg-white rounded-lg shadow-md">
     <h1 class="text-2xl font-bold mb-6 text-center">Course Enrollment Login</h1>
-  
+
     {#if error}
       <div class="mb-4 p-3 bg-red-100 text-red-700 rounded">{error}</div>
     {/if}
-  
+
     <form on:submit|preventDefault={handleLogin} class="space-y-4">
       <div>
-        <label class="block text-sm font-medium mb-1">Email</label>
+        <label class="block text-sm font-medium mb-1">Username</label>
         <input
-          type="email"
-          bind:value={email}
+          type="text"
+          bind:value={username}
           required
           class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-          placeholder="student@example.com"
+          placeholder="username"
         />
       </div>
-  
+
       <div>
         <label class="block text-sm font-medium mb-1">Password</label>
         <input
@@ -74,7 +89,7 @@
           placeholder="••••••••"
         />
       </div>
-  
+
       <button
         type="submit"
         class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
@@ -87,10 +102,9 @@
         {/if}
       </button>
     </form>
-  
+
     <div class="mt-4 text-center text-sm">
-      Don't have an account? 
-      <a href="/register" class="text-blue-500 hover:underline">Register here</a>
+      <p>Use the credentials provided by your administrator.</p>
+      <p class="mt-2">Default admin account: admin / password</p>
     </div>
   </main>
-  
