@@ -2,6 +2,7 @@
   import { user } from '$lib/stores';
   import CourseCard from '$lib/CourseCard.svelte';
   import { onMount } from 'svelte';
+    import { getCourseOfferings, getCourses, getDepartments, getEnrollments, getStudents } from '$lib/api';
 
   // Form state for creating a new instructor
   let showInstructorForm = false;
@@ -164,7 +165,8 @@
       const response = await fetch('/api/instructors', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${$user.token}`
         },
         body: JSON.stringify(newInstructor)
       });
@@ -200,23 +202,16 @@
     try {
       // Load all data in parallel
       const [studentsResponse, enrollmentsResponse, offeringsResponse, departmentsResponse] = await Promise.all([
-        fetch('/api/students/'),
-        fetch('/api/enrollments/'),
-        fetch('/api/course_offerings/'),
-        fetch('/api/departments/')
+        getStudents(),
+        getEnrollments(),
+        getCourseOfferings(),
+        getDepartments()
       ]);
 
-      // Check responses
-      if (!studentsResponse.ok) throw new Error('Failed to load students');
-      if (!enrollmentsResponse.ok) throw new Error('Failed to load enrollments');
-      if (!offeringsResponse.ok) throw new Error('Failed to load course offerings');
-      if (!departmentsResponse.ok) throw new Error('Failed to load departments');
-
-      // Parse responses
-      students = await studentsResponse.json();
-      enrollments = await enrollmentsResponse.json();
-      courseOfferings = await offeringsResponse.json();
-      departments = await departmentsResponse.json();
+      students = studentsResponse;
+      enrollments = enrollmentsResponse;
+      courseOfferings = offeringsResponse;
+      departments = departmentsResponse;
 
       // Set default selected student if not already set
       if (!selectedStudentId && students.length > 0) {
@@ -290,7 +285,10 @@
     try {
       const response = await fetch('/api/unenroll', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${$user.token}`
+        },
         body: JSON.stringify({
           userId: selectedStudentId,
           courseId
@@ -415,7 +413,8 @@
       const response = await fetch('/api/courses', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${$user.token}`
         },
         body: JSON.stringify(newCourse)
       });
@@ -492,7 +491,8 @@
       const response = await fetch('/api/locations', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${$user.token}`
         },
         body: JSON.stringify(newLocation)
       });
