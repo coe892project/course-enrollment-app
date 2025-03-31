@@ -9,8 +9,12 @@
       <p class="mdc-typography--body2">{course.description}</p>
 
       <div class="details">
-        <span class="mdc-typography--caption">Instructor: {course.instructor}</span>
-        <span class="mdc-typography--caption">Available Seats: {course.seats}</span>
+        <span class="mdc-typography--caption"
+          >Instructor: {course.instructor}</span
+        >
+        <span class="mdc-typography--caption"
+          >Available Seats: {course.available_seats}</span
+        >
       </div>
     </div>
   </div>
@@ -24,15 +28,23 @@
   .course-card {
     width: 100%;
     margin-bottom: 16px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
     border-radius: 4px;
     background-color: var(--mdc-theme-surface);
-    box-shadow: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12);
+    box-shadow:
+      0 2px 1px -1px rgba(0, 0, 0, 0.2),
+      0 1px 1px 0 rgba(0, 0, 0, 0.14),
+      0 1px 3px 0 rgba(0, 0, 0, 0.12);
   }
 
   .course-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 5px -3px rgba(0,0,0,.2), 0 8px 10px 1px rgba(0,0,0,.14), 0 3px 14px 2px rgba(0,0,0,.12);
+    box-shadow:
+      0 5px 5px -3px rgba(0, 0, 0, 0.2),
+      0 8px 10px 1px rgba(0, 0, 0, 0.14),
+      0 3px 14px 2px rgba(0, 0, 0, 0.12);
   }
 
   .mdc-card__content {

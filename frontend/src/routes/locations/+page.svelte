@@ -1,6 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import { ENDPOINTS } from '$lib/config.js';
+  import { getLocations } from '$lib/api.js';
+  import { token } from '$lib/stores.js';
 
   /**
    * @typedef {Object} Location
@@ -17,13 +19,8 @@
 
   onMount(async () => {
     try {
-      const response = await fetch('/api/locations');
-
-      if (!response.ok) {
-        throw new Error('Failed to load locations');
-      }
-
-      locations = await response.json();
+      // Use the getLocations function that includes the token
+      locations = await getLocations();
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     } finally {

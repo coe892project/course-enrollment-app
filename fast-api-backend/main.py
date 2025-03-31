@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated, List, Optional
 from pydantic import BaseModel
 import logging
@@ -33,6 +34,8 @@ except Exception as e:
 
 db = client.CourseEnrollment
 app = FastAPI()
+
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -80,7 +83,7 @@ class CourseOffering(BaseModel):
     instructor: str
     semester: str
     year: int
-    available_seats: int
+    seats_per_section: int
 
 class Location(BaseModel):
     room_id: str
@@ -153,9 +156,9 @@ def authenticate_user(username: str, password: str):
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -543,7 +546,7 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
     }
 
     for (course_code, semester), intentions in course_intentions.items():
-        offering = db.course_offerings.find_one({
+        offering: CourseOffering = db.course_offerings.find_one({
             "course_code": course_code,
             "semester": semester
         })

@@ -1,15 +1,22 @@
 <script>
-  import { user } from '$lib/stores';
-  import CourseCard from '$lib/CourseCard.svelte';
-  import { onMount } from 'svelte';
+  import { user, token } from "$lib/stores";
+  import CourseCard from "$lib/CourseCard.svelte";
+  import { onMount } from "svelte";
+  import {
+    getCourses,
+    getStudents,
+    getEnrollments,
+    getCourseOfferings,
+    createEntity,
+  } from "$lib/api";
 
   /**
    * @typedef {Object} Course
-   * @property {string} id
+   * @property {string} course_code
    * @property {string} title
    * @property {string} description
    * @property {string} instructor
-   * @property {number} seats
+   * @property {number} available_seats
    */
 
   /**
@@ -50,11 +57,11 @@
   /** @type {Enrollment[]} */
   let enrollments = [];
   let isLoading = true;
-  let error = '';
+  let error = "";
   /** @type {string} */
-  let selectedStudentId = '';
-  let enrollmentSuccess = '';
-  let unenrollSuccess = '';
+  let selectedStudentId = "";
+  let enrollmentSuccess = "";
+  let unenrollSuccess = "";
 
   // Get course offerings
   /** @type {CourseOffering[]} */
@@ -69,41 +76,36 @@
   function isEnrolled(studentId, courseId) {
     try {
       // Find the course offering for this course
-      const offering = courseOfferings.find(o => o.course_code === courseId);
+      const offering = courseOfferings.find((o) => o.course_code === courseId);
       if (!offering) return false;
 
       // Check if there's an enrollment for this student and offering
-      return enrollments.some(e =>
-        e.student_id === studentId &&
-        e.offering_id === offering.offering_id
+      return enrollments.some(
+        (e) =>
+          e.student_id === studentId && e.offering_id === offering.offering_id
       );
     } catch (error) {
-      console.error('Error checking enrollment:', error);
+      console.error("Error checking enrollment:", error);
       return false;
     }
   }
 
   onMount(async () => {
     try {
-      // Load all data in parallel
-      const [coursesResponse, studentsResponse, enrollmentsResponse, offeringsResponse] = await Promise.all([
-        fetch('/api/courses'),
-        fetch('/api/students/'),
-        fetch('/api/enrollments/'),
-        fetch('/api/course_offerings/')
-      ]);
+      // Load all data in parallel using API functions that include the token
+      const [coursesData, studentsData, enrollmentsData, offeringsData] =
+        await Promise.all([
+          getCourses(),
+          getStudents(),
+          getEnrollments(),
+          getCourseOfferings(),
+        ]);
 
-      // Check responses
-      if (!coursesResponse.ok) throw new Error('Failed to load courses');
-      if (!studentsResponse.ok) throw new Error('Failed to load students');
-      if (!enrollmentsResponse.ok) throw new Error('Failed to load enrollments');
-      if (!offeringsResponse.ok) throw new Error('Failed to load course offerings');
-
-      // Parse responses
-      courses = await coursesResponse.json();
-      students = await studentsResponse.json();
-      enrollments = await enrollmentsResponse.json();
-      courseOfferings = await offeringsResponse.json();
+      // Set the data
+      courses = coursesData;
+      students = studentsData;
+      enrollments = enrollmentsData;
+      courseOfferings = offeringsData;
 
       // Set default selected student
       if (students.length > 0) {
@@ -122,7 +124,7 @@
    * @returns {CourseOffering|undefined} - The course offering or undefined if not found
    */
   function findCourseOffering(courseId) {
-    return courseOfferings.find(o => o.course_code === courseId);
+    return courseOfferings.find((o) => o.course_code === courseId);
   }
 
   /**
@@ -132,22 +134,17 @@
     try {
       isLoading = true;
 
-      // Load all data in parallel
-      const [coursesResponse, enrollmentsResponse, offeringsResponse] = await Promise.all([
-        fetch('/api/courses'),
-        fetch('/api/enrollments/'),
-        fetch('/api/course_offerings/')
+      // Load all data in parallel using API functions that include the token
+      const [coursesData, enrollmentsData, offeringsData] = await Promise.all([
+        getCourses(),
+        getEnrollments(),
+        getCourseOfferings(),
       ]);
 
-      // Check responses
-      if (!coursesResponse.ok) throw new Error('Failed to load courses');
-      if (!enrollmentsResponse.ok) throw new Error('Failed to load enrollments');
-      if (!offeringsResponse.ok) throw new Error('Failed to load course offerings');
-
-      // Parse responses
-      courses = await coursesResponse.json();
-      enrollments = await enrollmentsResponse.json();
-      courseOfferings = await offeringsResponse.json();
+      // Set the data
+      courses = coursesData;
+      enrollments = enrollmentsData;
+      courseOfferings = offeringsData;
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     } finally {
@@ -161,38 +158,26 @@
    */
   async function handleEnrollment(courseId) {
     if (!selectedStudentId) {
-      error = 'Please select a student';
+      error = "Please select a student";
       return;
     }
 
-    enrollmentSuccess = '';
-    unenrollSuccess = '';
-    error = '';
+    enrollmentSuccess = "";
+    unenrollSuccess = "";
+    error = "";
 
     try {
-      const response = await fetch('/api/enroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: selectedStudentId,
-          courseId
-        })
+      // Use createEntity with the token from the store
+      await createEntity("/api/enroll", {
+        userId: selectedStudentId,
+        courseId,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enrollment failed');
-      }
-
-      // Get the enrollment result
-      await response.json();
 
       // Show success message
       enrollmentSuccess = `Successfully enrolled student ${selectedStudentId} in ${courseId}`;
 
       // Reload data from the backend to get the updated state
       await reloadData();
-
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
     }
@@ -204,29 +189,21 @@
    */
   async function handleUnenroll(courseId) {
     if (!selectedStudentId) {
-      error = 'No student selected';
+      error = "No student selected";
       return;
     }
 
-    unenrollSuccess = '';
-    enrollmentSuccess = '';
-    error = '';
+    unenrollSuccess = "";
+    enrollmentSuccess = "";
+    error = "";
     isLoading = true;
 
     try {
-      const response = await fetch('/api/unenroll', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: selectedStudentId,
-          courseId
-        })
+      // Use createEntity with the token from the store
+      await createEntity("/api/unenroll", {
+        userId: selectedStudentId,
+        courseId,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to unenroll student');
-      }
 
       // Show success message
       unenrollSuccess = `Successfully unenrolled student from ${courseId}`;
@@ -235,6 +212,7 @@
       await reloadData();
     } catch (error_) {
       error = error_ instanceof Error ? error_.message : String(error_);
+    } finally {
       isLoading = false;
     }
   }
@@ -283,7 +261,8 @@
       >
         {#each students as student}
           <option value={student.student_id}>
-            {student.first_name} {student.last_name} ({student.student_id})
+            {student.first_name}
+            {student.last_name} ({student.student_id})
           </option>
         {/each}
       </select>
@@ -304,17 +283,21 @@
 
           <div class="course-actions">
             <div class="course-details">
-              <span class="mdc-typography--caption">Seats available: {course.seats}</span>
+              <span class="mdc-typography--caption"
+                >Seats available: {course.available_seats}</span
+              >
               <span class="mdc-typography--caption">{course.instructor}</span>
             </div>
 
-            {#if selectedStudentId && isEnrolled(selectedStudentId, course.id)}
+            {#if selectedStudentId && isEnrolled(selectedStudentId, course.course_code)}
               <div class="enrollment-status">
-                <span class="mdc-typography--body2 enrolled-status">✓ Student already enrolled</span>
+                <span class="mdc-typography--body2 enrolled-status"
+                  >✓ Student already enrolled</span
+                >
               </div>
               <button
                 class="mdc-button mdc-button--raised mdc-button--danger"
-                on:click={() => handleUnenroll(course.id)}
+                on:click={() => handleUnenroll(course.course_code)}
               >
                 <span class="mdc-button__ripple"></span>
                 <span class="mdc-button__label">Unenroll Student</span>
@@ -322,13 +305,16 @@
             {:else}
               <button
                 class="mdc-button mdc-button--raised"
-                class:mdc-button--disabled={course.seats <= 0 || !selectedStudentId}
-                on:click={() => handleEnrollment(course.id)}
-                disabled={course.seats <= 0 || !selectedStudentId}
+                class:mdc-button--disabled={course.available_seats <= 0 ||
+                  !selectedStudentId}
+                on:click={() => handleEnrollment(course.course_code)}
+                disabled={course.available_seats <= 0 || !selectedStudentId}
               >
                 <span class="mdc-button__ripple"></span>
                 <span class="mdc-button__label">
-                  {course.seats > 0 ? 'Enroll Student' : 'Course Full'}
+                  {course.available_seats > 0
+                    ? "Enroll Student"
+                    : "Course Full"}
                 </span>
               </button>
             {/if}

@@ -1,4 +1,6 @@
 import { ENDPOINTS } from '$lib/config.js';
+import { token } from '$lib/stores.js';
+import { get } from 'svelte/store';
 
 /**
  * @typedef {Object} ApiCourseOffering
@@ -11,9 +13,23 @@ import { ENDPOINTS } from '$lib/config.js';
  * @property {number} available_seats
  */
 
-export async function GET() {
+/**
+ * @param {Object} params
+ * @param {Request} params.request
+ */
+export async function GET({ request }) {
   try {
-    const response = await fetch(ENDPOINTS.COURSE_OFFERINGS);
+    // Get the token from the request headers
+    const authHeader = request.headers.get('Authorization');
+
+    // Use the token from the request headers or fall back to the token from the store
+    const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
+
+    const response = await fetch(ENDPOINTS.COURSE_OFFERINGS, {
+      headers: {
+        'Authorization': authToken
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);

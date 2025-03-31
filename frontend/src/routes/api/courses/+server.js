@@ -1,5 +1,8 @@
 import { ENDPOINTS } from '$lib/config.js';
 import { json } from '@sveltejs/kit';
+import { apiRequest } from '$lib/api.js';
+import { get } from 'svelte/store';
+import { token } from '$lib/stores.js';
 
 /**
  * @typedef {Object} ApiCourse
@@ -14,9 +17,32 @@ import { json } from '@sveltejs/kit';
  * @property {string[]} course_time
  */
 
-export async function GET() {
+/**
+ * @param {Object} params
+ * @param {Request} params.request
+ */
+export async function GET({ request }) {
   try {
-    const response = await fetch(ENDPOINTS.COURSES);
+    // Get the authorization token from the request headers
+    const authHeader = request.headers.get('Authorization');
+
+    // Get the token from the store if no authorization header is provided
+    const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
+
+    // Make a GET request to the backend API with the authorization token
+    const response = await fetch(ENDPOINTS.COURSES, {
+      headers: {
+        'Authorization': authToken
+      }
+    });
+
+    // If unauthorized, return 401 to trigger logout in the frontend
+    if (response.status === 401) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
@@ -29,7 +55,7 @@ export async function GET() {
     const transformedCourses = courses.map((course) => ({
       id: course.course_code,
       title: course.course_name,
-      description: `${course.course_code} - ${course.section} - ${course.semester}`,
+      description: `${course.course_code} - ${course.section || 'Main'} - ${course.semester}`,
       instructor: course.instructor,
       seats: course.available_seats
     }));
@@ -55,14 +81,26 @@ export async function POST({ request }) {
   try {
     const courseData = await request.json();
 
-    // Make a POST request to the backend API
+    // Get the authorization token from the request headers
+    const authHeader = request.headers.get('Authorization');
+
+    // Get the token from the store if no authorization header is provided
+    const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
+
+    // Make a POST request to the backend API with the authorization token
     const response = await fetch(ENDPOINTS.COURSES, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': authToken
       },
       body: JSON.stringify(courseData)
     });
+
+    // If unauthorized, return 401 to trigger logout in the frontend
+    if (response.status === 401) {
+      return json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     if (!response.ok) {
       const errorData = await response.json();

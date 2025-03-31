@@ -5,6 +5,8 @@ export const API_URL = PUBLIC_API_URL;
 
 // API endpoints
 export const ENDPOINTS = {
+  LOGIN: `${API_URL}/login`,
+  ACCOUNTS: `${API_URL}/accounts/`,
   COURSES: `${API_URL}/courses/`,
   ENROLLMENTS: `${API_URL}/enrollments/`,
   COURSE_OFFERINGS: `${API_URL}/course_offerings/`,
