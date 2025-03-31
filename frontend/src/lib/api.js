@@ -1,7 +1,7 @@
-import { ENDPOINTS } from './config.js';
-import { token, user } from './stores.js';
-import { get } from 'svelte/store';
-import { goto } from '$app/navigation';
+import { ENDPOINTS } from "./config.js";
+import { token, user } from "./stores.js";
+import { get } from "svelte/store";
+import { goto } from "$app/navigation";
 
 /**
  * Login with username and password
@@ -15,31 +15,31 @@ export async function login(username, password) {
 
     // Create form data for the backend API
     const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
+    formData.append("username", username);
+    formData.append("password", password);
 
     // Make a POST request to the backend login API
     const response = await fetch(ENDPOINTS.LOGIN, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: formData
+      body: formData,
     });
 
     console.log(`Login response status: ${response.status}`);
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || 'Invalid credentials');
+      throw new Error(errorData.detail || "Invalid credentials");
     }
 
     // Return the token response
     const tokenData = await response.json();
-    console.log('Login successful, token received');
+    console.log("Login successful, token received");
     return tokenData;
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 }
@@ -55,12 +55,12 @@ export async function apiRequest(url, options = {}) {
 
   // Set up headers with authentication token
   const headers = new Headers(options.headers || {});
-  headers.set('Authorization', authToken ? `Bearer ${authToken}` : '');
+  headers.set("Authorization", authToken ? `Bearer ${authToken}` : "");
 
   // Make the request
   const response = await fetch(url, {
     ...options,
-    headers
+    headers,
   });
 
   // Handle authentication errors
@@ -70,7 +70,7 @@ export async function apiRequest(url, options = {}) {
     token.set(null);
 
     // Redirect to login
-    goto('/login');
+    goto("/login");
   }
 
   return response;
@@ -86,8 +86,8 @@ export async function getCourses() {
 
   const response = await fetch(ENDPOINTS.COURSES, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -97,7 +97,7 @@ export async function getCourses() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -115,8 +115,8 @@ export async function getDepartments() {
 
   const response = await fetch(ENDPOINTS.DEPARTMENTS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -126,7 +126,7 @@ export async function getDepartments() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -144,8 +144,8 @@ export async function getFaculties() {
 
   const response = await fetch(ENDPOINTS.FACULTIES, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -155,7 +155,7 @@ export async function getFaculties() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -173,8 +173,8 @@ export async function getInstructors() {
 
   const response = await fetch(ENDPOINTS.INSTRUCTORS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -184,7 +184,7 @@ export async function getInstructors() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -202,8 +202,8 @@ export async function getLocations() {
 
   const response = await fetch(ENDPOINTS.LOCATIONS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -213,7 +213,7 @@ export async function getLocations() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -231,8 +231,8 @@ export async function getPrograms() {
 
   const response = await fetch(ENDPOINTS.PROGRAMS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -242,7 +242,7 @@ export async function getPrograms() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -260,8 +260,8 @@ export async function getPrerequisites() {
 
   const response = await fetch(ENDPOINTS.PREREQUISITES, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -271,7 +271,7 @@ export async function getPrerequisites() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -289,8 +289,8 @@ export async function getEnrollments() {
 
   const response = await fetch(ENDPOINTS.ENROLLMENTS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -300,7 +300,7 @@ export async function getEnrollments() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -318,8 +318,8 @@ export async function getCourseOfferings() {
 
   const response = await fetch(ENDPOINTS.COURSE_OFFERINGS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -329,7 +329,7 @@ export async function getCourseOfferings() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -347,8 +347,8 @@ export async function getStudents() {
 
   const response = await fetch(ENDPOINTS.STUDENTS, {
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -358,7 +358,7 @@ export async function getStudents() {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     throw new Error(`API error: ${response.status}`);
   }
@@ -373,16 +373,17 @@ export async function getStudents() {
  * @returns {Promise<any>} - The created entity
  */
 export async function createEntity(endpoint, data) {
+  console.log(`Creating entity at ${endpoint} with data:`, data);
   // Make a direct request to the backend API with the token
   const authToken = get(token);
 
   const response = await fetch(endpoint, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
+      "Content-Type": "application/json",
+      Authorization: authToken ? `Bearer ${authToken}` : "",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {
@@ -392,7 +393,7 @@ export async function createEntity(endpoint, data) {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
@@ -413,12 +414,12 @@ export async function updateEntity(endpoint, id, data) {
   const authToken = get(token);
 
   const response = await fetch(`${endpoint}${id}`, {
-    method: 'PUT',
+    method: "PUT",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
+      "Content-Type": "application/json",
+      Authorization: authToken ? `Bearer ${authToken}` : "",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) {
@@ -428,7 +429,7 @@ export async function updateEntity(endpoint, id, data) {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
@@ -448,10 +449,10 @@ export async function deleteEntity(endpoint, id) {
   const authToken = get(token);
 
   const response = await fetch(`${endpoint}${id}`, {
-    method: 'DELETE',
+    method: "DELETE",
     headers: {
-      'Authorization': authToken ? `Bearer ${authToken}` : ''
-    }
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
   });
 
   if (!response.ok) {
@@ -461,7 +462,7 @@ export async function deleteEntity(endpoint, id) {
       token.set(null);
 
       // Redirect to login
-      goto('/login');
+      goto("/login");
     }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
