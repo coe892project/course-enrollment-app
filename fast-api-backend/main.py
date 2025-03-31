@@ -647,6 +647,7 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
                     )
                     results['successful_enrollments'] += 1
                     enrolled = True
+                    section['available_seats'] = section['available_seats'] - 1
                     break
 
             if not enrolled:
