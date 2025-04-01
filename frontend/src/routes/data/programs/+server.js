@@ -1,12 +1,8 @@
 import { ENDPOINTS } from '$lib/config.js';
-import { token } from '$lib/stores.js';
+import { json } from '@sveltejs/kit';
+import { apiRequest } from '$lib/api.js';
 import { get } from 'svelte/store';
-
-/**
- * @typedef {Object} ApiFaculty
- * @property {string} faculty_id
- * @property {string} faculty_name
- */
+import { token } from '$lib/stores.js';
 
 /**
  * @param {Object} params
@@ -21,7 +17,7 @@ export async function GET({ request }) {
     const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
 
     // Make a GET request to the backend API with the authorization token
-    const response = await fetch(ENDPOINTS.FACULTIES, {
+    const response = await fetch(ENDPOINTS.PROGRAMS, {
       headers: {
         'Authorization': authToken
       }
@@ -39,14 +35,13 @@ export async function GET({ request }) {
       throw new Error(`API error: ${response.status}`);
     }
 
-    /** @type {ApiFaculty[]} */
-    const faculties = await response.json();
+    const programs = await response.json();
 
-    return new Response(JSON.stringify(faculties), {
+    return new Response(JSON.stringify(programs), {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error fetching faculties:', error);
+    console.error('Error fetching programs:', error);
     return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

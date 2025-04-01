@@ -1,17 +1,8 @@
 import { ENDPOINTS } from '$lib/config.js';
-import { token } from '$lib/stores.js';
+import { json } from '@sveltejs/kit';
+import { apiRequest } from '$lib/api.js';
 import { get } from 'svelte/store';
-
-/**
- * @typedef {Object} ApiCourseOffering
- * @property {string} offering_id
- * @property {string} course_code
- * @property {string} course_name
- * @property {string} instructor
- * @property {string} semester
- * @property {number} year
- * @property {number} available_seats
- */
+import { token } from '$lib/stores.js';
 
 /**
  * @param {Object} params
@@ -19,23 +10,31 @@ import { get } from 'svelte/store';
  */
 export async function GET({ request }) {
   try {
-    // Get the token from the request headers
+    // Get the authorization token from the request headers
     const authHeader = request.headers.get('Authorization');
 
-    // Use the token from the request headers or fall back to the token from the store
+    // Get the token from the store if no authorization header is provided
     const authToken = authHeader || (get(token) ? `Bearer ${get(token)}` : '');
 
+    // Make a GET request to the backend API with the authorization token
     const response = await fetch(ENDPOINTS.COURSE_OFFERINGS, {
       headers: {
         'Authorization': authToken
       }
     });
 
+    // If unauthorized, return 401 to trigger logout in the frontend
+    if (response.status === 401) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
 
-    /** @type {ApiCourseOffering[]} */
     const courseOfferings = await response.json();
 
     return new Response(JSON.stringify(courseOfferings), {

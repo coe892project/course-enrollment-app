@@ -1,13 +1,8 @@
 import { ENDPOINTS } from '$lib/config.js';
-import { token } from '$lib/stores.js';
+import { json } from '@sveltejs/kit';
+import { apiRequest } from '$lib/api.js';
 import { get } from 'svelte/store';
-
-/**
- * @typedef {Object} ApiDepartment
- * @property {string} department_id
- * @property {string} department_name
- * @property {string} faculty_id
- */
+import { token } from '$lib/stores.js';
 
 /**
  * @param {Object} params
@@ -40,7 +35,6 @@ export async function GET({ request }) {
       throw new Error(`API error: ${response.status}`);
     }
 
-    /** @type {ApiDepartment[]} */
     const departments = await response.json();
 
     return new Response(JSON.stringify(departments), {
