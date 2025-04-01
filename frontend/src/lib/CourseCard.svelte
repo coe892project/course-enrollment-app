@@ -1,19 +1,29 @@
 <script>
   export let course;
+
+  // Determine the title to display (course_name has priority over title)
+  const displayTitle = course.course_name || course.title;
+
+  // Create a description if not provided
+  const displayDescription = course.description ||
+    `${course.course_code || course.id} - ${course.section || 'Main'} - ${course.semester || ''}`;
+
+  // Get available seats
+  const availableSeats = course.available_seats || course.seats;
 </script>
 
 <div class="mdc-card course-card">
   <div class="mdc-card__primary-action" tabindex="0">
     <div class="mdc-card__content">
-      <h2 class="mdc-typography--headline6">{course.title}</h2>
-      <p class="mdc-typography--body2">{course.description}</p>
+      <h2 class="mdc-typography--headline6">{displayTitle}</h2>
+      <p class="mdc-typography--body2">{displayDescription}</p>
 
       <div class="details">
         <span class="mdc-typography--caption"
           >Instructor: {course.instructor}</span
         >
         <span class="mdc-typography--caption"
-          >Available Seats: {course.available_seats}</span
+          >Available Seats: {availableSeats}</span
         >
       </div>
     </div>

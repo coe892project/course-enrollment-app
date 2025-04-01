@@ -9,14 +9,19 @@
     getCourseOfferings,
     createEntity,
   } from "$lib/api";
+  import { ENDPOINTS } from "$lib/config";
 
   /**
    * @typedef {Object} Course
-   * @property {string} course_code
-   * @property {string} title
-   * @property {string} description
-   * @property {string} instructor
-   * @property {number} available_seats
+   * @property {string} course_code - Course code
+   * @property {string} id - Course ID (alternative to course_code)
+   * @property {string} title - Course title
+   * @property {string} course_name - Course name (alternative to title)
+   * @property {string} description - Course description
+   * @property {string} instructor - Course instructor
+   * @property {string} section - Course section
+   * @property {number} available_seats - Available seats
+   * @property {number} seats - Available seats (alternative to available_seats)
    */
 
   /**
@@ -284,9 +289,8 @@
           <div class="course-actions">
             <div class="course-details">
               <span class="mdc-typography--caption"
-                >Seats available: {course.available_seats}</span
+                >Course Code: {course.course_code || course.id}</span
               >
-              <span class="mdc-typography--caption">{course.instructor}</span>
             </div>
 
             {#if selectedStudentId && isEnrolled(selectedStudentId, course.course_code)}
