@@ -168,7 +168,7 @@
 
     try {
       // Use createEntity with the token from the store
-      await createEntity("/data/enroll", {
+      await createEntity("/enroll", {
         userId: selectedStudentId,
         courseId,
       });
@@ -200,7 +200,7 @@
 
     try {
       // Use createEntity with the token from the store
-      await createEntity("/data/unenroll", {
+      await createEntity("/unenroll", {
         userId: selectedStudentId,
         courseId,
       });
