@@ -1,5 +1,5 @@
-# course-enrollment-app
+# COE 892 Project: Course Enrollment
 
-run `npm run dev -- --open` in the frontend folder
+This is the repo for Group 42 (W2025)'s COE 892 project.
 
-Put the URL to the backend API in frontend/.env as the PUBLIC_API_URL variable.
+Please see the `fast-api-backend` and `frontend` folders for build and running instructions.
