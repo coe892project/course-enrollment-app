@@ -17,4 +17,5 @@ export const ENDPOINTS = {
   LOCATIONS: `${API_URL}/locations/`,
   PROGRAMS: `${API_URL}/programs/`,
   PREREQUISITES: `${API_URL}/prerequisites/`,
+  COURSE_INTENTIONS: `${API_URL}/course_intentions/`,
 };
