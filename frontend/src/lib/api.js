@@ -338,6 +338,35 @@ export async function getCourseOfferings() {
 }
 
 /**
+ * Get all course intentions
+ * @returns {Promise<any[]>} - Array of course intentions
+ */
+export async function getCourseIntentions() {
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.COURSE_INTENTIONS, {
+    headers: {
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto("/login");
+    }
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
  * Get all students
  * @returns {Promise<any[]>} - Array of students
  */

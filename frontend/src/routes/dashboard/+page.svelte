@@ -3,6 +3,7 @@
   import { get } from 'svelte/store';
   import StudentEnrollments from '$lib/dashboard/StudentEnrollments.svelte';
   import InstructorCreationForm from '$lib/dashboard/InstructorCreationForm.svelte';
+  import CourseIntentions from '$lib/dashboard/CourseIntentions.svelte';
   import type { Instructor } from '$lib/types';
   import { getDepartments } from '$lib/api';
   import { ENDPOINTS } from '$lib/config';
@@ -29,6 +30,9 @@
   let showInstructorForm = false;
   let showCourseForm = false;
   let showLocationForm = false;
+
+  // Active tab state
+  let activeTab: 'enrollments' | 'intentions' = 'enrollments';
 
   // Form state for creating a new location
   let newLocation: Location = {
@@ -650,7 +654,28 @@
     </div>
   {/if}
 
-  <StudentEnrollments />
+  <div class="tab-navigation">
+    <button
+      class="mdc-button {activeTab === 'enrollments' ? 'active-tab' : ''}"
+      on:click={() => activeTab = 'enrollments'}
+    >
+      <span class="mdc-button__ripple"></span>
+      <span class="mdc-button__label">Student Enrollments</span>
+    </button>
+    <button
+      class="mdc-button {activeTab === 'intentions' ? 'active-tab' : ''}"
+      on:click={() => activeTab = 'intentions'}
+    >
+      <span class="mdc-button__ripple"></span>
+      <span class="mdc-button__label">Course Intentions</span>
+    </button>
+  </div>
+
+  {#if activeTab === 'enrollments'}
+    <StudentEnrollments />
+  {:else if activeTab === 'intentions'}
+    <CourseIntentions />
+  {/if}
 </main>
 
 <style>
@@ -669,6 +694,24 @@
     margin: 1rem 0;
     display: flex;
     gap: 1rem;
+  }
+
+  .tab-navigation {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 1.5rem;
+  }
+
+  .tab-navigation .mdc-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0;
+    margin-right: 0.5rem;
+    border-bottom: 3px solid transparent;
+  }
+
+  .tab-navigation .active-tab {
+    border-bottom: 3px solid var(--mdc-theme-primary);
+    font-weight: 500;
   }
 
   /* Reusable form styles */
