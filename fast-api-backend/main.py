@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -8,6 +8,8 @@ from typing import Annotated, List, Optional
 from pydantic import BaseModel
 import logging
 import os
+import json
+from pathlib import Path
 from urllib.parse import quote_plus
 import pymongo
 from dotenv import load_dotenv
@@ -839,3 +841,53 @@ def create_enrollment(student_id, section_id):
         "grade": None
     }
     db.enrollments.insert_one(enrollment)
+
+COLLECTIONS = {
+    "accounts": "accounts",
+    "courses": "courses",
+    "students": "students",
+    "course_offerings": "course_offerings",
+    "locations": "locations",
+    "instructors": "instructors",
+    "programs": "programs",
+    "departments": "departments",
+    "faculties": "faculties",
+    "enrollments": "enrollments",
+    "prerequisites": "prerequisites",
+    "course_intentions": "course_intentions"
+}
+
+FILE_TO_COLLECTION = {
+    "DummyAccounts.json": "accounts",
+    "DummyCourses.json": "courses",
+    "DummyStudents.json": "students",
+    "DummyCoursesOffered.json": "course_offerings",
+    "DummyLocations.json": "locations",
+    "DummyInstructor.json": "instructors",
+    "DummyPrograms.json": "programs",
+    "DummyDepartments.json": "departments",
+    "DummyFaculties.json": "faculties",
+    "DummyEnrollments.json": "enrollments",
+    "DummyPrerequisites.json": "prerequisites",
+    "DummyCourseIntentions.json": "course_intentions"
+}
+
+@app.post("/reset/", status_code=200)
+async def reset_database():
+    try:
+        for collection in COLLECTIONS.values():
+            db[collection].delete_many({})
+
+        dummy_data_path = Path("./DummyData")
+        for filename, collection_name in FILE_TO_COLLECTION.items():
+            file_path = dummy_data_path / filename
+            if file_path.exists():
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                    if data:
+                        db[collection_name].insert_many(data)
+
+        return {"message": "Database reset and populated with dummy data successfully"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error resetting database: {str(e)}")
