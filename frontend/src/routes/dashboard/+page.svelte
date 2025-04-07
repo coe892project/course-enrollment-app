@@ -5,6 +5,14 @@
   import InstructorCreationForm from '$lib/dashboard/InstructorCreationForm.svelte';
   import type { Instructor } from '$lib/types';
   import { getDepartments } from '$lib/api';
+  import { ENDPOINTS } from '$lib/config';
+
+  interface Location {
+    room_id: string;
+    room_name: string;
+    available_seats: number;
+    available_times: string[];
+  }
 
   interface CourseForm {
     course_code: string;
@@ -21,6 +29,17 @@
   let showInstructorForm = false;
   let showCourseForm = false;
   let showLocationForm = false;
+
+  // Form state for creating a new location
+  let newLocation: Location = {
+    room_id: '',
+    room_name: '',
+    available_seats: 30,
+    available_times: []
+  };
+  let locationTimeInput = '';
+  let locationCreationSuccess = '';
+  let locationCreationError = '';
 
   // Form state for creating a new course
   let newCourse: CourseForm = {
@@ -132,8 +151,8 @@
       }
 
       const authToken = get(token);
-      // Send the course data to the API
-      const response = await fetch('/api/courses', {
+      // Send the course data directly to the backend API
+      const response = await fetch(ENDPOINTS.COURSES, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +163,7 @@
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create course');
+        throw new Error(errorData.detail || errorData.error || 'Failed to create course');
       }
 
       // Get the created course
@@ -167,6 +186,82 @@
   function handleInstructorCreated(instructor: Instructor) {
     // Optionally, you can add any additional logic here after an instructor is created
     console.log('Instructor created:', instructor);
+  }
+
+  /**
+   * Add a time slot to the new location
+   */
+  function addLocationTime() {
+    if (locationTimeInput.trim()) {
+      newLocation.available_times = [...newLocation.available_times, locationTimeInput.trim()];
+      locationTimeInput = '';
+    }
+  }
+
+  /**
+   * Remove a time slot from the new location
+   * @param {string} time - The time slot to remove
+   */
+  function removeLocationTime(time: string) {
+    newLocation.available_times = newLocation.available_times.filter((t: string) => t !== time);
+  }
+
+  /**
+   * Reset the location creation form
+   */
+  function resetLocationForm() {
+    newLocation = {
+      room_id: '',
+      room_name: '',
+      available_seats: 30,
+      available_times: []
+    };
+    locationTimeInput = '';
+    locationCreationError = '';
+    locationCreationSuccess = '';
+  }
+
+  /**
+   * Submit the location creation form
+   */
+  async function createLocation() {
+    locationCreationError = '';
+    locationCreationSuccess = '';
+
+    try {
+      // Validate required fields
+      if (!newLocation.room_id || !newLocation.room_name) {
+        locationCreationError = 'Please fill in all required fields';
+        return;
+      }
+
+      const authToken = get(token);
+      // Send the location data directly to the backend API
+      const response = await fetch(ENDPOINTS.LOCATIONS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify(newLocation)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || errorData.error || 'Failed to create location');
+      }
+
+      // Get the created location
+      const createdLocation = await response.json();
+
+      // Show success message
+      locationCreationSuccess = `Successfully created location: ${createdLocation.room_id} - ${createdLocation.room_name}`;
+
+      // Reset the form
+      resetLocationForm();
+    } catch (error_) {
+      locationCreationError = error_ instanceof Error ? error_.message : String(error_);
+    }
   }
 </script>
 
@@ -431,6 +526,123 @@
             >
               <span class="mdc-button__ripple"></span>
               <span class="mdc-button__label">Create Course</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
+
+  {#if showLocationForm}
+    <div class="mdc-card course-form-card">
+      <div class="mdc-card__content">
+        <h2 class="mdc-typography--headline6">Create New Location</h2>
+
+        {#if locationCreationSuccess}
+          <div class="success-message">
+            <p class="mdc-typography--body2">{locationCreationSuccess}</p>
+          </div>
+        {/if}
+
+        {#if locationCreationError}
+          <div class="error-message">
+            <p class="mdc-typography--body2">{locationCreationError}</p>
+          </div>
+        {/if}
+
+        <form on:submit|preventDefault={createLocation}>
+          <div class="form-row">
+            <div class="form-field">
+              <label class="mdc-typography--subtitle2" for="room-id">Room ID*</label>
+              <input
+                id="room-id"
+                class="mdc-text-field__input"
+                type="text"
+                bind:value={newLocation.room_id}
+                required
+              />
+            </div>
+
+            <div class="form-field">
+              <label class="mdc-typography--subtitle2" for="room-name">Room Name*</label>
+              <input
+                id="room-name"
+                class="mdc-text-field__input"
+                type="text"
+                bind:value={newLocation.room_name}
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label class="mdc-typography--subtitle2" for="available-seats-location">Available Seats*</label>
+              <input
+                id="available-seats-location"
+                class="mdc-text-field__input"
+                type="number"
+                min="1"
+                bind:value={newLocation.available_seats}
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label class="mdc-typography--subtitle2">Available Times</label>
+            <div class="array-input">
+              <input
+                class="mdc-text-field__input"
+                type="text"
+                placeholder="Enter available time (e.g., 'Mon 10:00-11:30')"
+                bind:value={locationTimeInput}
+              />
+              <button
+                type="button"
+                class="mdc-button mdc-button--raised"
+                on:click={addLocationTime}
+              >
+                <span class="mdc-button__ripple"></span>
+                <span class="mdc-button__label">Add</span>
+              </button>
+            </div>
+
+            {#if newLocation.available_times.length > 0}
+              <div class="array-items">
+                {#each newLocation.available_times as time}
+                  <div class="array-item">
+                    <span>{time}</span>
+                    <button
+                      type="button"
+                      class="mdc-button mdc-button--small"
+                      on:click={() => removeLocationTime(time)}
+                    >
+                      <span class="mdc-button__ripple"></span>
+                      <span class="mdc-button__label">Remove</span>
+                    </button>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="mdc-button"
+              on:click={resetLocationForm}
+            >
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label">Reset</span>
+            </button>
+
+            <button
+              type="submit"
+              class="mdc-button mdc-button--raised"
+            >
+              <span class="mdc-button__ripple"></span>
+              <span class="mdc-button__label">Create Location</span>
             </button>
           </div>
         </form>

@@ -3,6 +3,7 @@
   import { get } from 'svelte/store';
   import { getDepartments } from '$lib/api';
   import type { Department, Instructor } from '$lib/types';
+  import { ENDPOINTS } from '$lib/config';
 
   export let onInstructorCreated: (instructor: Instructor) => void = () => {};
 
@@ -84,8 +85,8 @@
       }
 
       const authToken = get(token);
-      // Send the instructor data to the API
-      const response = await fetch('/api/instructors', {
+      // Send the instructor data directly to the backend API
+      const response = await fetch(ENDPOINTS.INSTRUCTORS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +97,7 @@
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create instructor');
+        throw new Error(errorData.detail || errorData.error || 'Failed to create instructor');
       }
 
       // Get the created instructor
