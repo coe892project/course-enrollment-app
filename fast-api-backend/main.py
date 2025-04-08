@@ -596,14 +596,9 @@ async def process_intentions_simple(current_user: Annotated[Accounts, Depends(ge
                 enrollment = {
                     "enrollment_id": enrollment_id,
                     "student_id": student_id,
-                    "course_code": course_code,
-                    "semester": semester,
-                    "section": "1",  # Default section
+                    "offering_id": "O002"
                     "enrollment_date": datetime.now(timezone.utc).isoformat(),
-                    "grade": None,
-                    "instructor": selected_instructor,
-                    "room_id": selected_room,
-                    "course_time": selected_time
+                    "grade": "Not Finished"
                 }
                 
                 db.enrollments.insert_one(enrollment)
