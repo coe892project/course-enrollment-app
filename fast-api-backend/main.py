@@ -534,10 +534,6 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
     if not intentions:
         return {"message": "No course intentions to process"}
     
-    student_intentions = defaultdict(list)
-    for intention in intentions:
-        student_intentions[intention['student_id']].append(intention)
-    
     course_intentions = defaultdict(list)
     for intention in intentions:
         key = (intention['course_code'], intention['semester'])
@@ -551,9 +547,12 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
         "details": []
     }
 
-    offerings = {}
     for (course_code, semester), intentions in course_intentions.items():
-        offering = db.course_offerings.find_one({"course_code": course_code, "semester": semester})
+        offering: CourseOffering = db.course_offerings.find_one({
+            "course_code": course_code,
+            "semester": semester
+        })
+
         if not offering:
             offering = {
                 "offering_id": f"{course_code}-{semester}",
@@ -565,15 +564,30 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
                 "room_id": "",
                 "course_time": [],
                 "max_sections": 1,
-                "seats_per_section": 30,
-                "total_hours": 3
+                "seats_per_section": 30
             }
             db.course_offerings.insert_one(offering)
             results['details'].append(f"Created new offering for {course_code}")
-        offerings[(course_code, semester)] = offering
 
-        sections = list(db.courses.find({"course_code": course_code, "semester": semester}).sort("section", 1))
+        if not offering.get('instructor'):
+            instructor_assigned = assign_instructor(offering)
+            if not instructor_assigned:
+                results['details'].append(f"Failed to assign instructor for {course_code}")
+                continue
+
+        if not offering.get('room_id'):
+            room_assigned = assign_room(offering)
+            if not room_assigned:
+                results['details'].append(f"Failed to assign room for {course_code}")
+                continue
+
+        sections = list(db.courses.find({
+            "course_code": course_code,
+            "semester": semester
+        }).sort("section", 1))
+
         num_sections_needed = (len(intentions) // offering['seats_per_section']) + 1
+
         while len(sections) < num_sections_needed:
             section_num = len(sections) + 1
             new_section = {
@@ -584,163 +598,23 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
                 "available_seats": offering['seats_per_section'],
                 "prerequisites": [],
                 "corequisites": [],
-                "course_time": [],
-                "instructor": "",
-                "room_id": ""
+                "course_time": offering['course_time'],  # Same as offering
+                "instructor": offering['instructor'],  # Same as offering
+                "room_id": offering['room_id']  # Same as offering
             }
             db.courses.insert_one(new_section)
             sections.append(new_section)
             results['sections_created'] += 1
             results['details'].append(f"Created section {section_num} for {course_code}")
 
-    days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
-    hours = [f"{h}:00" for h in range(8, 21)]
-    all_time_slots = [f"{day} {start}-{end}" for day in days for start, end in zip(hours, hours[1:])]
-
-    def generate_all_3hour_combinations():
-        combinations = []
-        for day in days:
-            for i in range(len(hours) - 3):
-                combinations.append([f"{day} {hours[i]}-{hours[i+3]}"])
-        for day in days:
-            for i in range(len(hours) - 2):
-                for j in range(len(hours) - 1):
-                    if i == j or abs(i - j) < 2:
-                        continue
-                    combinations.append([f"{day} {hours[i]}-{hours[i+2]}", f"{day} {hours[j]}-{hours[j+1]}"])
-        for day1 in days:
-            for day2 in days:
-                if day1 == day2:
-                    continue
-                for i in range(len(hours) - 2):
-                    for j in range(len(hours) - 1):
-                        combinations.append([f"{day1} {hours[i]}-{hours[i+2]}", f"{day2} {hours[j]}-{hours[j+1]}"])
-        for day in days:
-            for i in range(len(hours) - 1):
-                for j in range(len(hours) - 1):
-                    for k in range(len(hours) - 1):
-                        if i == j or i == k or j == k:
-                            continue
-                        combinations.append([f"{day} {hours[i]}-{hours[i+1]}", f"{day} {hours[j]}-{hours[j+1]}", f"{day} {hours[k]}-{hours[k+1]}"])
-        for day1 in days:
-            for day2 in days:
-                for day3 in days:
-                    if day1 == day2 or day1 == day3 or day2 == day3:
-                        continue
-                    for i in range(len(hours) - 1):
-                        for j in range(len(hours) - 1):
-                            for k in range(len(hours) - 1):
-                                combinations.append([f"{day1} {hours[i]}-{hours[i+1]}", f"{day2} {hours[j]}-{hours[j+1]}", f"{day3} {hours[k]}-{hours[k+1]}"])
-        return combinations
-
-    all_possible_combinations = generate_all_3hour_combinations()
-    sorted_courses = sorted(course_intentions.keys(), key=lambda k: len(course_intentions[k]), reverse=True)
-    scheduled_courses = {}
-    used_time_slots = set()
-    instructor_schedules = defaultdict(set)
-    room_schedules = defaultdict(set)
-
-    for course_key in sorted_courses:
-        course_code, semester = course_key
-        offering = offerings[course_key]
-        students_in_course = {i['student_id'] for i in course_intentions[course_key]}
-        selected_time = None
-        selected_instructor = None
-        selected_room = None
-        
-        for time_combo in all_possible_combinations:
-            flat_time_combo = []
-            for item in time_combo:
-                if isinstance(item, list):
-                    flat_time_combo.extend(item)
-                else:
-                    flat_time_combo.append(item)
-            if set(flat_time_combo) & used_time_slots:
-                continue
-            
-            student_conflict = False
-            for student_id in students_in_course:
-                student_courses = []
-                for intention in student_intentions[student_id]:
-                    other_course_key = (intention['course_code'], intention['semester'])
-                    if other_course_key in scheduled_courses:
-                        student_courses.extend(scheduled_courses[other_course_key])
-                if set(flat_time_combo) & set(student_courses):
-                    student_conflict = True
-                    break
-            if student_conflict:
-                continue
-            
-            available_instructors = list(db.instructors.find({"courses_teachable": course_code}))
-            instructor_found = False
-            for instructor in available_instructors:
-                instructor_busy = False
-                for slot in flat_time_combo:
-                    if slot in instructor_schedules[instructor['instructor_id']]:
-                        instructor_busy = True
-                        break
-                if not instructor_busy:
-                    selected_instructor = instructor['instructor_id']
-                    instructor_found = True
-                    break
-            
-            if not instructor_found:
-                continue
-            
-            available_rooms = list(db.locations.find({"available_seats": {"$gte": offering['seats_per_section']}}))
-            room_found = False
-            for room in available_rooms:
-                room_busy = False
-                for slot in flat_time_combo:
-                    if slot in room_schedules[room['room_id']]:
-                        room_busy = True
-                        break
-                if not room_busy:
-                    selected_room = room['room_id']
-                    room_found = True
-                    break
-            
-            if room_found:
-                selected_time = flat_time_combo
-                break
-        
-        if not selected_time:
-            results['details'].append(f"Could not schedule {course_code}")
-            continue
-        
-        used_time_slots.update(selected_time)
-        for slot in selected_time:
-            instructor_schedules[selected_instructor].add(slot)
-            room_schedules[selected_room].add(slot)
-        
-        db.course_offerings.update_one(
-            {"offering_id": offering['offering_id']},
-            {"$set": {
-                "course_time": selected_time,
-                "instructor": selected_instructor,
-                "room_id": selected_room
-            }}
-        )
-        
-        db.courses.update_many(
-            {"course_code": course_code, "semester": semester},
-            {"$set": {
-                "course_time": selected_time,
-                "instructor": selected_instructor,
-                "room_id": selected_room
-            }}
-        )
-        
-        scheduled_courses[course_key] = selected_time
-        results['details'].append(f"Scheduled {course_code} at {selected_time}")
-
-    for (course_code, semester), intentions in course_intentions.items():
-        offering = offerings[(course_code, semester)]
-        sections = list(db.courses.find({"course_code": course_code, "semester": semester}).sort("section", 1))
+        # Process each intention
         for intention in intentions:
             student_id = intention['student_id']
             student = db.students.find_one({"student_id": student_id})
-            if not student or not all(prereq in student.get('completed_courses', []) for prereq in sections[0].get('prerequisites', [])):
+            
+            # Check prerequisites against first section
+            if not student or not all(prereq in student.get('completed_courses', []) 
+                            for prereq in sections[0].get('prerequisites', [])):
                 await update_intention(
                     intention['intention_id'],
                     CourseIntention(
@@ -760,7 +634,10 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
             for section in sections:
                 if section['available_seats'] > 0:
                     create_enrollment(student_id, section['_id'])
-                    db.courses.update_one({"_id": section['_id']}, {"$inc": {"available_seats": -1}})
+                    db.courses.update_one(
+                        {"_id": section['_id']},
+                        {"$inc": {"available_seats": -1}}
+                    )
                     await update_intention(
                         intention['intention_id'],
                         CourseIntention(
@@ -775,6 +652,7 @@ async def process_course_intentions(current_user: Annotated[Accounts, Depends(ge
                     )
                     results['successful_enrollments'] += 1
                     enrolled = True
+                    section['available_seats'] = section['available_seats'] - 1
                     break
 
             if not enrolled:
@@ -858,7 +736,6 @@ COLLECTIONS = {
 }
 
 FILE_TO_COLLECTION = {
-    "DummyAccounts.json": "accounts",
     "DummyCourses.json": "courses",
     "DummyStudents.json": "students",
     "DummyCoursesOffered.json": "course_offerings",
@@ -876,7 +753,8 @@ FILE_TO_COLLECTION = {
 async def reset_database():
     try:
         for collection in COLLECTIONS.values():
-            db[collection].delete_many({})
+            if not collection == "accounts": 
+                db[collection].delete_many({})
 
         dummy_data_path = Path("./DummyData")
         for filename, collection_name in FILE_TO_COLLECTION.items():
