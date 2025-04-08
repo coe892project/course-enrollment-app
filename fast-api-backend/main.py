@@ -561,7 +561,8 @@ async def process_intentions_simple(current_user: Annotated[Accounts, Depends(ge
                 if not student:
                     raise HTTPException(status_code=404, detail=f"Student {student_id} not found")
 
-                course = db.courses.find_one({"course_code": course_code})
+                course = db.course_offerings.find_one({"course_code": course_code})
+                offering_id = course["offering_id"]
                 if not course:
                     raise HTTPException(status_code=404, detail=f"Course {course_code} not found")
 
@@ -596,7 +597,7 @@ async def process_intentions_simple(current_user: Annotated[Accounts, Depends(ge
                 enrollment = {
                     "enrollment_id": enrollment_id,
                     "student_id": student_id,
-                    "offering_id": "O002"
+                    "offering_id": offering_id,
                     "enrollment_date": datetime.now(timezone.utc).isoformat(),
                     "grade": "Not Finished"
                 }
