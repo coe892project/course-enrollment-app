@@ -367,6 +367,38 @@ export async function getCourseIntentions() {
 }
 
 /**
+ * Process course intentions to enroll students
+ * @returns {Promise<any>} - Result of the processing
+ */
+export async function processIntentions() {
+  console.log("Processing course intentions...");
+  // Make a direct request to the backend API with the token
+  const authToken = get(token);
+
+  const response = await fetch(ENDPOINTS.PROCESS_INTENTIONS, {
+    method: "POST",
+    headers: {
+      Authorization: authToken ? `Bearer ${authToken}` : "",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Clear user and token
+      user.set(null);
+      token.set(null);
+
+      // Redirect to login
+      goto("/login");
+    }
+    const errorData = await response.json();
+    throw new Error(errorData.detail || `API error: ${response.status}`);
+  }
+
+  return await response.json();
+}
+
+/**
  * Get all students
  * @returns {Promise<any[]>} - Array of students
  */
@@ -495,5 +527,44 @@ export async function deleteEntity(endpoint, id) {
     }
     const errorData = await response.json();
     throw new Error(errorData.detail || `API error: ${response.status}`);
+  }
+}
+
+/**
+ * Reset the database with dummy data
+ * @returns {Promise<{message: string}>} - Success message
+ */
+export async function resetDatabase() {
+  try {
+    console.log("Resetting database...");
+
+    // Make a direct request to the backend reset API with the token
+    const authToken = get(token);
+
+    const response = await fetch(ENDPOINTS.RESET, {
+      method: "POST",
+      headers: {
+        Authorization: authToken ? `Bearer ${authToken}` : "",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Clear user and token
+        user.set(null);
+        token.set(null);
+
+        // Redirect to login
+        goto("/login");
+      }
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `API error: ${response.status}`);
+    }
+
+    console.log("Database reset successful");
+    return await response.json();
+  } catch (error) {
+    console.error("Reset error:", error);
+    throw error;
   }
 }

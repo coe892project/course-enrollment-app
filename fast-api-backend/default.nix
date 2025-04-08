@@ -9,5 +9,9 @@
       python312Packages.python-dotenv
       python312Packages.uvicorn
       python312Packages.fastapi-cli
+      python312Packages.python-jose
+      python312Packages.bcrypt
+      python312Packages.passlib
+      python312Packages.cryptography
     ];
   }

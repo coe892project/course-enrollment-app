@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getCourseIntentions, getCourses, getStudents } from '$lib/api';
+  import { getCourseIntentions, getCourses, getStudents, processIntentions as apiProcessIntentions, updateEntity } from '$lib/api';
+  import { ENDPOINTS } from '$lib/config';
 
   // Define interfaces for our data types
   interface CourseIntention {
@@ -9,7 +10,7 @@
     course_code: string;
     semester: string;
     timestamp: string;
-    status: 'pending' | 'approved' | 'rejected';
+    status: 'pending' | 'enrolled' | 'failed';
     error?: string;
   }
 
@@ -34,7 +35,7 @@
   let error = '';
 
   // Filter state
-  let statusFilter: 'all' | 'pending' | 'approved' | 'rejected' = 'all';
+  let statusFilter: 'all' | 'pending' | 'enrolled' | 'failed' = 'all';
   let searchQuery = '';
 
   // Fetch data on component mount
@@ -100,16 +101,45 @@
   });
 
   // Handle status change
-  async function updateIntentionStatus(intention: CourseIntention, newStatus: 'pending' | 'approved' | 'rejected'): Promise<void> {
+  async function updateIntentionStatus(intention: CourseIntention, newStatus: 'pending' | 'enrolled' | 'failed'): Promise<void> {
     try {
-      // In a real implementation, this would call an API to update the status
-      // For now, we'll just update it locally
+      // Update the status locally first for immediate feedback
       intention.status = newStatus;
-
-      // Refresh the list
       courseIntentions = [...courseIntentions];
+
+      // Call the API to update the status on the backend
+      await updateEntity(ENDPOINTS.COURSE_INTENTIONS, intention.intention_id, {
+        ...intention,
+        status: newStatus
+      });
+
+      // Refresh the list to get the latest data
+      courseIntentions = await getCourseIntentions();
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
+
+      // Refresh the list to revert any local changes if the API call failed
+      courseIntentions = await getCourseIntentions();
+    }
+  }
+
+  // Process all pending intentions to enroll students
+  async function processIntentions(): Promise<void> {
+    try {
+      loading = true;
+      error = '';
+
+      // Call the API to process intentions
+      const result = await apiProcessIntentions();
+      console.log('Process intentions result:', result);
+
+      // Refresh the intentions list to get updated statuses
+      courseIntentions = await getCourseIntentions();
+
+      loading = false;
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
+      loading = false;
     }
   }
 </script>
@@ -144,10 +174,21 @@
       >
         <option value="all">All</option>
         <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
+        <option value="enrolled">Enrolled</option>
+        <option value="failed">Failed</option>
       </select>
     </div>
+  </div>
+
+  <div class="actions-bar">
+    <button
+      class="mdc-button process-button"
+      on:click={processIntentions}
+      disabled={loading || courseIntentions.filter(i => i.status === 'pending').length === 0}
+    >
+      <span class="mdc-button__ripple"></span>
+      <span class="mdc-button__label">Process Intentions</span>
+    </button>
   </div>
 
   {#if loading}
@@ -190,18 +231,18 @@
               <td class="mdc-data-table__cell actions">
                 {#if intention.status === 'pending'}
                   <button
-                    class="mdc-button mdc-button--small approve-button"
-                    on:click={() => updateIntentionStatus(intention, 'approved')}
+                    class="mdc-button mdc-button--small enroll-button"
+                    on:click={() => updateIntentionStatus(intention, 'enrolled')}
                   >
                     <span class="mdc-button__ripple"></span>
-                    <span class="mdc-button__label">Approve</span>
+                    <span class="mdc-button__label">Enroll</span>
                   </button>
                   <button
-                    class="mdc-button mdc-button--small reject-button"
-                    on:click={() => updateIntentionStatus(intention, 'rejected')}
+                    class="mdc-button mdc-button--small fail-button"
+                    on:click={() => updateIntentionStatus(intention, 'failed')}
                   >
                     <span class="mdc-button__ripple"></span>
-                    <span class="mdc-button__label">Reject</span>
+                    <span class="mdc-button__label">Fail</span>
                   </button>
                 {:else}
                   <button
@@ -279,12 +320,12 @@
     color: #ff8f00;
   }
 
-  .status-approved {
+  .status-enrolled {
     background-color: #e8f5e9;
     color: #2e7d32;
   }
 
-  .status-rejected {
+  .status-failed {
     background-color: #ffebee;
     color: #c62828;
   }
@@ -294,14 +335,26 @@
     gap: 0.5rem;
   }
 
-  .approve-button {
+  .enroll-button {
     background-color: #e8f5e9;
     color: #2e7d32;
   }
 
-  .reject-button {
+  .fail-button {
     background-color: #ffebee;
     color: #c62828;
+  }
+
+  .process-button {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    margin-bottom: 1rem;
+  }
+
+  .actions-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
   }
 
   .reset-button {

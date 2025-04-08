@@ -1,9 +1,10 @@
-<script>
+<script lang="ts">
   import '../app.css';
   import { user, token } from '$lib/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { resetDatabase } from '$lib/api';
 
   // Check if the current page is the login page
   $: isLoginPage = $page.url.pathname === '/login';
@@ -20,6 +21,22 @@
     user.set(null);
     token.set(null);
     goto('/login');
+  }
+
+  // Handle database reset
+  async function handleReset() {
+    try {
+      if (confirm('Are you sure you want to reset the database? This will delete all current data and replace it with dummy data.')) {
+        const result = await resetDatabase();
+        alert(result.message || 'Database reset successful');
+        // Refresh the page to show updated data
+        window.location.reload();
+      }
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error('Unknown error');
+      console.error('Reset error:', error);
+      alert(`Error resetting database: ${error.message}`);
+    }
   }
 </script>
 
@@ -66,6 +83,13 @@
             <a href="/instructors" style="color: white; text-decoration: none; margin-right: 1rem;">Instructors</a>
             <a href="/locations" style="color: white; text-decoration: none; margin-right: 1rem;">Locations</a>
             <a href="/programs" style="color: white; text-decoration: none; margin-right: 1rem;">Programs</a>
+            <button
+              on:click={handleReset}
+              style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; margin-right: 1rem;"
+            >
+              <span class="material-icons" style="margin-right: 4px;">restart_alt</span>
+              Reset
+            </button>
             <button
               on:click={handleLogout}
               style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center;"
