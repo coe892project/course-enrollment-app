@@ -531,7 +531,6 @@ async def delete_intention(
 @app.post("/process_intentions_simple/")
 async def process_intentions_simple(current_user: Annotated[Accounts, Depends(get_current_user)]):
     try:
-        # Get all pending intentions
         intentions = list(db.course_intentions.find({"status": "pending"}))
         if not intentions:
             return {"message": "No pending intentions to process"}
@@ -542,8 +541,6 @@ async def process_intentions_simple(current_user: Annotated[Accounts, Depends(ge
             "failed_processing": 0,
             "details": []
         }
-
-        # Define available time slots (example - adjust as needed)
         available_times = [
             ["Mon 9:00-12:00"],
             ["Tue 10:00-13:00"],
