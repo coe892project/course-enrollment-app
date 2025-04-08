@@ -18,4 +18,5 @@ export const ENDPOINTS = {
   PROGRAMS: `${API_URL}/programs/`,
   PREREQUISITES: `${API_URL}/prerequisites/`,
   COURSE_INTENTIONS: `${API_URL}/course_intentions/`,
+  RESET: `${API_URL}/reset/`,
 };

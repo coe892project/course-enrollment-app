@@ -497,3 +497,42 @@ export async function deleteEntity(endpoint, id) {
     throw new Error(errorData.detail || `API error: ${response.status}`);
   }
 }
+
+/**
+ * Reset the database with dummy data
+ * @returns {Promise<{message: string}>} - Success message
+ */
+export async function resetDatabase() {
+  try {
+    console.log("Resetting database...");
+
+    // Make a direct request to the backend reset API with the token
+    const authToken = get(token);
+
+    const response = await fetch(ENDPOINTS.RESET, {
+      method: "POST",
+      headers: {
+        Authorization: authToken ? `Bearer ${authToken}` : "",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Clear user and token
+        user.set(null);
+        token.set(null);
+
+        // Redirect to login
+        goto("/login");
+      }
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `API error: ${response.status}`);
+    }
+
+    console.log("Database reset successful");
+    return await response.json();
+  } catch (error) {
+    console.error("Reset error:", error);
+    throw error;
+  }
+}
